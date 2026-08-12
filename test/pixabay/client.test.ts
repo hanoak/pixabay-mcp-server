@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildUrl, createPixabayClient } from '../../src/pixabay/client.js'
 import { PixabayApiError } from '../../src/pixabay/errors.js'
+import { createCache } from '../../src/lib/cache.js'
+import type { Logger } from '../../src/lib/logger.js'
+
+function fakeLogger(): Logger {
+  return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+}
 
 describe('buildUrl', () => {
   it('sets the key query param', () => {
@@ -37,7 +43,11 @@ describe('createPixabayClient', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({ apiKey: 'secret-key' })
+    const client = createPixabayClient({
+      apiKey: 'secret-key',
+      cache: createCache(),
+      logger: fakeLogger(),
+    })
     const result = await client.searchImages({ q: 'cats' })
 
     expect(result.hits).toEqual([{ id: 1 }])
@@ -53,7 +63,11 @@ describe('createPixabayClient', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({ apiKey: 'secret-key' })
+    const client = createPixabayClient({
+      apiKey: 'secret-key',
+      cache: createCache(),
+      logger: fakeLogger(),
+    })
     const result = await client.searchVideos({ q: 'ocean' })
 
     expect(result.hits).toEqual([{ id: 2 }])
@@ -72,7 +86,11 @@ describe('createPixabayClient', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({ apiKey: 'super-secret-key' })
+    const client = createPixabayClient({
+      apiKey: 'super-secret-key',
+      cache: createCache(),
+      logger: fakeLogger(),
+    })
 
     await expect(client.searchImages({})).rejects.toMatchObject({
       status: 400,
@@ -82,5 +100,106 @@ describe('createPixabayClient', () => {
     await expect(client.searchImages({})).rejects.not.toMatchObject({
       message: expect.stringContaining('super-secret-key'),
     })
+  })
+
+  it('serves a repeated query from cache without calling fetch again', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ total: 1, totalHits: 1, hits: [{ id: 1 }] }), {
+        status: 200,
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const logger = fakeLogger()
+
+    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger })
+    await client.searchImages({ q: 'cats' })
+    const result = await client.searchImages({ q: 'cats' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(result.hits).toEqual([{ id: 1 }])
+    expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('cache hit'))
+  })
+
+  it('does not cache an error response', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(
+        () => new Response('Bad Request', { status: 400, statusText: 'Bad Request' }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger: fakeLogger() })
+    await expect(client.searchImages({ q: 'cats' })).rejects.toBeInstanceOf(PixabayApiError)
+    await expect(client.searchImages({ q: 'cats' })).rejects.toBeInstanceOf(PixabayApiError)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('logs the rate-limit-remaining header on every response', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ total: 0, totalHits: 0, hits: [] }), {
+        status: 200,
+        headers: { 'X-RateLimit-Remaining': '42' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const logger = fakeLogger()
+
+    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger })
+    await client.searchImages({ q: 'cats' })
+
+    expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('42'))
+  })
+
+  it('backs off using X-RateLimit-Reset and retries exactly once on 429', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('API rate limit exceeded', {
+          status: 429,
+          headers: { 'X-RateLimit-Reset': '0' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ total: 1, totalHits: 1, hits: [{ id: 1 }] }), {
+          status: 200,
+        }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+    const logger = fakeLogger()
+
+    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger })
+    const result = await client.searchImages({ q: 'cats' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(result.hits).toEqual([{ id: 1 }])
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('backing off'))
+  })
+
+  it('does not retry a 429 with no X-RateLimit-Reset header (fails fast, never guesses)', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response('API rate limit exceeded', { status: 429 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger: fakeLogger() })
+
+    await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({ status: 429 })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('never retries more than once, even if the retry also 429s', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('API rate limit exceeded', {
+        status: 429,
+        headers: { 'X-RateLimit-Reset': '0' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger: fakeLogger() })
+
+    await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({ status: 429 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })
