@@ -103,9 +103,13 @@ once v1 has real usage and a concrete gap shows up (categories-as-resource? a cu
       of logs/errors even if a bug ever tried to include it.
 - [x] `[v1]` `.env.example` committed; real `.env` gitignored. ✅ `.env` was already
       gitignored since §0's scaffold; `.env.example` documents both env vars.
-- [~] `[v1]` Secret scanning (gitleaks pre-commit hook + CI full-history scan). The
-  pre-commit hook (`gitleaks protect --staged`) has been live since §0. The CI
-  full-history scan is a GitHub Actions job — explicitly deferred to §5.
+- [x] `[v1]` Secret scanning (gitleaks pre-commit hook + CI full-history scan). ✅
+      Pre-commit hook (`gitleaks protect --staged`) live since §0;
+      `.github/workflows/secret-scan.yml` (§5) runs `gitleaks/gitleaks-action` on
+      every push/PR. Caveat: that action diffs the current push/PR rather than
+      walking the full history from repo genesis on every run — still meaningful
+      continuous coverage, just worth knowing it's not literally a from-scratch
+      history scan each time.
 - [x] `[v1]` Dependency security: `npm audit`, Dependabot, minimal deps. ✅
       `npm audit --omit=dev --audit-level=high` is currently clean; `.github/
 dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
@@ -113,9 +117,10 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 - [x] `[v1]` Input sanitization before hitting the API (zod schemas + clamping + encoding).
       ✅ Done in §7's tool schemas (enums, numeric bounds) and `pixabay/client.ts`'s
       `buildUrl`, which encodes every param via `URLSearchParams`.
-- [~] `[v1]` Supply-chain: `npm publish --provenance`, committed lockfile, SHA-pinned CI
-  actions. `package-lock.json` has been committed since §0. Provenance and
-  SHA-pinned Actions require the actual publish/CI workflows — deferred to §5.
+- [x] `[v1]` Supply-chain: `npm publish --provenance`, committed lockfile, SHA-pinned CI
+      actions. ✅ `package-lock.json` committed since §0; `release.yml` sets
+      `NPM_CONFIG_PROVENANCE: 'true'` with `id-token: write`; every `uses:` in all
+      three workflow files is pinned to a verified commit SHA, not a floating tag.
 - [x] `[v1]` **Fail-fast startup validation** of `PIXABAY_API_KEY` — actionable stderr
       message + non-zero exit, not a cryptic 401/403 mid-conversation. ✅ Done in the
       §0/§7 pass (`config.ts` + `server.ts`'s `runServer`).
@@ -127,12 +132,21 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
       can embed the request URL, plus the non-ok-response error body as
       defense-in-depth).
 - [ ] `[v1]` Protect the publish path: npm account 2FA + OIDC trusted publishing (or a
-      scoped least-privilege automation token). Deferred to §5 — this is configured
-      alongside the actual publish workflow.
-- [ ] `[v1]` Least-privilege GitHub Actions permissions (top-level `permissions: contents: read`).
-      Deferred to §5 — no GitHub Actions workflows exist yet to scope.
-- [ ] `[v1]` Dependency license-compliance check in CI (permissive-license allowlist).
-      Deferred to §5 — a CI job, not code in this repo yet.
+      scoped least-privilege automation token). `release.yml` is wired for a classic
+      `NPM_TOKEN` + provenance (OIDC trusted publishing can't be configured until a
+      package exists on the registry at all). **Needs the project owner's action,
+      not something committable**: (1) enable 2FA on the npm account, (2) generate
+      an automation token and add it as the `NPM_TOKEN` repo secret before the
+      first release can publish, (3) optionally configure OIDC trusted publishing
+      on the package's npmjs.com settings page after that first publish exists, to
+      drop the token entirely.
+- [x] `[v1]` Least-privilege GitHub Actions permissions (top-level `permissions: contents: read`).
+      ✅ All three workflows default to `contents: read`; `release.yml`'s job
+      elevates only `contents: write` / `pull-requests: write` / `id-token: write`,
+      scoped to that one job, not the workflow default.
+- [x] `[v1]` Dependency license-compliance check in CI (permissive-license allowlist).
+      ✅ `license:check` script (`license-checker-rseidelsohn`) runs in ci.yml's
+      `quality` job against an allowlist of permissive licenses only.
 - [x] `[v1]` SSRF guard on any URL taken from an API response, if a future feature ever adds
       a server-side follow-up fetch (none exists in v1 — Pixabay has no
       `download_location`-style endpoint to call back to). ✅ Not applicable — confirmed
@@ -167,9 +181,9 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 - [x] `[v1]` Unit tests for the cache layer specifically: TTL expiry, key-stripping (the
       cache key must never contain the raw API key), normalization (param order doesn't
       create duplicate cache entries). ✅ Done in §1's pass (`test/lib/cache.test.ts`).
-- [ ] `[v1]` Type-checking, lint, and format checks in CI. Deferred to §5 — a GitHub
-      Actions workflow, not code in this repo yet; run manually via `npm run
-typecheck`/`lint`/`format:check` until then.
+- [x] `[v1]` Type-checking, lint, and format checks in CI. ✅ `ci.yml`'s `quality` job
+      runs `typecheck`/`lint`/`format:check` (plus `audit:prod`/`test:coverage`/
+      `license:check`) on every push/PR.
 - [x] `[v1]` Coverage thresholds (v8, regression floor in `vitest.config.ts`). ✅ Raised
       this pass to 90/90/90/90, just below the suite's current 91.6/92.5/92.7/91.8.
 - [x] `[v1]` Smoke/integration test for the MCP server handshake (in-memory
@@ -190,18 +204,32 @@ typecheck`/`lint`/`format:check` until then.
       in this dev/CI environment. Still genuine Pixabay-sourced field shapes, not
       hand-invented data. Worth re-validating against a real live response if/when a
       key is available.
-- [ ] `[v1]` CI test matrix: Node 20/22 × Linux/macOS/Windows (+ `.nvmrc`). `.nvmrc` has
-      existed since §0; the matrix itself is a GitHub Actions job — deferred to §5.
+- [x] `[v1]` CI test matrix: Node 20/22 × Linux/macOS/Windows (+ `.nvmrc`). ✅ `.nvmrc`
+      since §0; `ci.yml`'s `test` job matrixes `node: [20, 22]` ×
+      `os: [ubuntu-latest, macos-latest, windows-latest]`.
 - [x] `[v1]` Document MCP Inspector in the dev/contributor workflow. ✅
       `CONTRIBUTING.md`'s "Using MCP Inspector" section — the rest of that document is
       §6's job.
 
 ## 5. CI/CD & release automation
 
-- [ ] `[v1]` GitHub Actions: test/lint/build on PR.
-- [ ] `[v1]` Automated releases (Changesets): version + changelog + npm publish.
-- [ ] `[v1]` Conventional commits via commitlint on `commit-msg`.
-- [ ] `[v1]` npm publish provenance.
+- [x] `[v1]` GitHub Actions: test/lint/build on PR. ✅ `ci.yml` — `quality` (typecheck/
+      lint/format/audit/coverage/license), `package` (publint/attw/`--version`/
+      `npm pack --dry-run`), `test` (Node 20/22 × 3 OSes). Same structure as the
+      `pexels-mcp-server` sibling project, per the user's explicit request for
+      exact parity — every command each job runs was verified locally before
+      committing.
+- [x] `[v1]` Automated releases (Changesets): version + changelog + npm publish. ✅
+      `.changeset/config.json` + `release.yml`: opens/updates a "Version Packages"
+      PR on `main` when changesets exist, publishes to npm when that PR merges.
+      The actual first publish needs a one-time manual step — see the §2 "protect
+      the publish path" note above.
+- [x] `[v1]` Conventional commits via commitlint on `commit-msg`. ✅ Already live
+      since §0's scaffold (`.husky/commit-msg`).
+- [x] `[v1]` npm publish provenance. ✅ `release.yml` sets `NPM_CONFIG_PROVENANCE:
+'true'` with `id-token: write` — works alongside the classic `NPM_TOKEN` the
+      first release needs, provenance doesn't require OIDC trusted-publishing auth
+      specifically, just the `id-token` permission for its own attestation signing.
 
 ## 6. Developer & contributor experience
 
@@ -260,22 +288,42 @@ typecheck`/`lint`/`format:check` until then.
 
 ## 8. Distribution & runtime
 
-- [ ] `[v1]` `bin` entry for `npx` + shebang.
-- [ ] `[v1]` `files` field ships only `dist/`.
-- [ ] `[v1]` Build tooling: **tsup**.
-- [ ] `[v1]` Cross-platform (macOS/Linux/Windows); `.gitattributes` forcing LF.
-- [ ] `[v1]` Pre-publish package validation in CI: `publint` + `@arethetypeswrong/cli` +
-      `npm pack --dry-run`, then a bin smoke test.
-- [ ] `[v1]` Declare `engines.node` + a runtime Node-version guard.
-- [ ] `[v1]` Support `--version` / `--help` and a TTY guard on the bin.
-- [ ] `[v1]` Populate `package.json` discoverability metadata (keywords: mcp,
-      modelcontextprotocol, pixabay, images, videos, stock-media…).
-- [ ] `[v1]` npm name: `@hanoak/pixabay-mcp-server`, bin `pixabay-mcp-server`.
+> Completed early, in the §5 pass — pulled forward because the user asked for exact
+> CI/CD parity with the `pexels-mcp-server` sibling project, whose `ci.yml`
+> "package" job directly exercises most of these items (`--version`, `publint`/
+> `attw`, package.json's publishable shape).
+
+- [x] `[v1]` `bin` entry for `npx` + shebang. ✅ Since §0; tsup's banner adds the
+      shebang.
+- [x] `[v1]` `files` field ships only `dist/`. ✅ with a note: `files` now explicitly
+      lists `["dist", "README.md", "LICENSE"]`, matching the sibling project —
+      npm always force-includes README/LICENSE/package.json in the tarball
+      regardless of `files`, so the actual shipped contents are identical either
+      way (confirmed via `npm pack --dry-run`: 5 files, no source leak). The
+      explicit listing is redundant but harmless, not a behavior change.
+- [x] `[v1]` Build tooling: **tsup**. ✅ Since §0.
+- [x] `[v1]` Cross-platform (macOS/Linux/Windows); `.gitattributes` forcing LF. ✅
+      `.gitattributes` added; `ci.yml`'s `test` job matrixes all three OSes.
+- [x] `[v1]` Pre-publish package validation in CI: `publint` + `@arethetypeswrong/cli` +
+      `npm pack --dry-run`, then a bin smoke test. ✅ `ci.yml`'s `package` job runs
+      all four; `node dist/index.js --version` is the bin smoke test.
+- [x] `[v1]` Declare `engines.node` + a runtime Node-version guard. ✅ `engines.node`
+      since §0; `lib/node-guard.ts`'s `nodeVersionError()`, wired into `index.ts`.
+- [x] `[v1]` Support `--version` / `--help` and a TTY guard on the bin. ✅ `index.ts`
+      — both flags plus `-v`/`-h`, and a TTY guard printing usage instead of
+      hanging when launched interactively.
+- [x] `[v1]` Populate `package.json` discoverability metadata (keywords: mcp,
+      modelcontextprotocol, pixabay, images, videos, stock-media…). ✅ Added.
+- [x] `[v1]` npm name: `@hanoak/pixabay-mcp-server`, bin `pixabay-mcp-server`. ✅
+      Since §0.
 
 ## 9. Observability (lightweight)
 
-- [ ] `[v1]` Optional debug logging to **stderr only** (`src/lib/logger.ts`, `LOG_LEVEL`).
-- [ ] `[v1]` Version/health info via `--version` and the MCP `initialize` response.
+- [x] `[v1]` Optional debug logging to **stderr only** (`src/lib/logger.ts`, `LOG_LEVEL`).
+      ✅ Since §0.
+- [x] `[v1]` Version/health info via `--version` and the MCP `initialize` response. ✅
+      `--version` in `index.ts` (§5 pass); the MCP `initialize` response has
+      reported `{name, version}` since `createServer` was first written in §0/§7.
 
 ## 10. Docs & maintenance
 
@@ -288,8 +336,11 @@ typecheck`/`lint`/`format:check` until then.
 
 - [ ] `[v1]` Return recoverable failures as `isError: true` tool results, never JSON-RPC
       protocol errors.
-- [ ] `[v1]` Graceful shutdown + crash safety (stdin EOF / SIGINT / SIGTERM,
-      `uncaughtException`/`unhandledRejection`).
+- [x] `[v1]` Graceful shutdown + crash safety (stdin EOF / SIGINT / SIGTERM,
+      `uncaughtException`/`unhandledRejection`). ✅ Completed early, in the §5
+      pass, as part of the same `index.ts`/`server.ts` port that added
+      `--version`/`--help`. The rest of this section (tool annotations, the
+      `instructions` field, MCP cancellation, resources/prompts) is still open.
 - [ ] `[v1]` Declare tool annotations (`readOnlyHint: true`, `openWorldHint: true`, `title`).
 - [ ] `[v1]` Namespace tool names (`pixabay_search_images`, not `search_images`).
 - [ ] `[v1]` Populate the server `instructions` field (default safesearch, courtesy
