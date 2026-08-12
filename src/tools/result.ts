@@ -7,6 +7,9 @@ export interface ToolTextContent {
 }
 
 export interface ToolResult {
+  // Index signature matches the MCP SDK's CallToolResult shape so handlers can return
+  // this type directly wherever the SDK expects one.
+  [key: string]: unknown
   content: ToolTextContent[]
   isError?: boolean
 }
