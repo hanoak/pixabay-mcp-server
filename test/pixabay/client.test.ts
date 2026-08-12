@@ -297,4 +297,23 @@ describe('createPixabayClient', () => {
       message: expect.stringContaining('caller cancelled'),
     })
   })
+
+  it('surfaces a malformed response as SchemaValidationError, warning via the logger', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      // "hits" as a string instead of an array is not something the lenient
+      // schema's passthrough can absorb — a genuine shape mismatch.
+      new Response(JSON.stringify({ total: 1, totalHits: 1, hits: 'not-an-array' }), {
+        status: 200,
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const logger = fakeLogger()
+
+    const { client } = makeClient({ logger })
+
+    await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({
+      name: 'SchemaValidationError',
+    })
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('image search'))
+  })
 })

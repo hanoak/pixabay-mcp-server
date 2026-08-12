@@ -1,6 +1,7 @@
 import { buildCacheKey, type Cache, type CacheKeyParams } from '../lib/cache.js'
 import type { Logger } from '../lib/logger.js'
 import type { Redactor } from '../lib/redact.js'
+import { parseResponse } from '../schemas/parse.js'
 import { imageSearchResponseSchema, type ImageSearchResponse } from '../schemas/image.js'
 import { videoSearchResponseSchema, type VideoSearchResponse } from '../schemas/video.js'
 import { createPixabayApiError } from './errors.js'
@@ -163,11 +164,11 @@ export function createPixabayClient(config: PixabayClientConfig): PixabayClient 
   return {
     async searchImages(params, signal) {
       const json = await request(IMAGES_ENDPOINT, params, signal)
-      return imageSearchResponseSchema.parse(json)
+      return parseResponse(imageSearchResponseSchema, json, 'image search', config.logger)
     },
     async searchVideos(params, signal) {
       const json = await request(VIDEOS_ENDPOINT, params, signal)
-      return videoSearchResponseSchema.parse(json)
+      return parseResponse(videoSearchResponseSchema, json, 'video search', config.logger)
     },
   }
 }
