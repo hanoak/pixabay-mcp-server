@@ -9,12 +9,13 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/index.ts'],
-      // Regression floor — raise as the suite grows, never lower to turn a red build green.
+      // Regression floor, set just below what the initial suite actually achieves.
+      // Raise as the suite grows; never lower it to turn a red build green.
       thresholds: {
-        lines: 0,
-        functions: 0,
-        branches: 0,
-        statements: 0,
+        lines: 85,
+        functions: 80,
+        branches: 90,
+        statements: 85,
       },
     },
   },
