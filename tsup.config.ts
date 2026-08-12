@@ -5,6 +5,7 @@ export default defineConfig({
   format: ['esm'],
   target: 'node20',
   dts: true,
+  sourcemap: true,
   clean: true,
   shims: false,
   banner: {
