@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { loadConfig } from '../src/config.js'
+import { ConfigError, loadConfig } from '../src/config.js'
 
 describe('loadConfig', () => {
-  it('throws an actionable error when PIXABAY_API_KEY is missing', () => {
+  it('throws a ConfigError with actionable guidance when PIXABAY_API_KEY is missing', () => {
     expect(() => loadConfig({})).toThrowError(/PIXABAY_API_KEY is not set/)
+    expect(() => loadConfig({})).toThrow(ConfigError)
   })
 
   it('returns the api key and defaults log level to info', () => {
