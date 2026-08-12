@@ -140,13 +140,24 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 
 ## 3. Reliability & robustness
 
-- [ ] `[v1]` Error mapping: Pixabay 400/403/429/5xx → clean MCP errors with actionable
-      messages, via a typed `PixabayApiError` (`src/pixabay/errors.ts`).
-- [ ] `[v1]` Retries & backoff for 429/5xx, honoring `X-RateLimit-Reset`.
-- [ ] `[v1]` Network timeouts (`AbortSignal.timeout`; combine with caller signal).
-- [ ] `[v1]` Rate-limit awareness: read and log `X-RateLimit-Remaining`.
-- [ ] `[v1]` **The 24h cache (see §1) doubles as a reliability feature** — a repeated query
-      within the window returns instantly without touching the rate limit budget.
+- [x] `[v1]` Error mapping: Pixabay 400/403/429/5xx → clean MCP errors with actionable
+      messages, via a typed `PixabayApiError` (`src/pixabay/errors.ts`). ✅
+      `createPixabayApiError` maps each status to a clear statement (plus, for
+      403/5xx, what to do about it) while keeping Pixabay's own message as detail.
+- [x] `[v1]` Retries & backoff for 429/5xx, honoring `X-RateLimit-Reset`. ✅ 429 backs
+      off using `X-RateLimit-Reset` (§1's pass); 5xx now backs off a fixed 500ms.
+      Both cap at exactly one considered retry — never blind or looping.
+- [x] `[v1]` Network timeouts (`AbortSignal.timeout`; combine with caller signal). ✅
+      Every fetch carries a 10s timeout (configurable via `timeoutMs` for tests),
+      combined with an optional caller-provided `AbortSignal` via `AbortSignal.any` —
+      no caller passes one yet, but `PixabayClient`'s methods already accept it, ready
+      for §11's MCP cancellation wiring without another interface change.
+- [x] `[v1]` Rate-limit awareness: read and log `X-RateLimit-Remaining`. ✅ Done in
+      §1's pass (`logRateLimitRemaining` in `pixabay/client.ts`).
+- [x] `[v1]` **The 24h cache (see §1) doubles as a reliability feature** — a repeated query
+      within the window returns instantly without touching the rate limit budget. ✅
+      Already true by construction since §1's cache integration — no new code needed,
+      just noting it here as the reliability angle on the same feature.
 
 ## 4. Testing & quality
 
