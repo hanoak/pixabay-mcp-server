@@ -20,6 +20,7 @@ describe('handleSearchImages', () => {
 
     expect(ctx.client.searchImages).toHaveBeenCalledWith(
       expect.objectContaining({ q: 'cats', safesearch: true }),
+      undefined,
     )
   })
 
@@ -30,6 +31,7 @@ describe('handleSearchImages', () => {
 
     expect(ctx.client.searchImages).toHaveBeenCalledWith(
       expect.objectContaining({ safesearch: false }),
+      undefined,
     )
   })
 
@@ -69,7 +71,7 @@ describe('handleGetImage', () => {
 
     const result = await handleGetImage(ctx, { id: 42 })
 
-    expect(ctx.client.searchImages).toHaveBeenCalledWith({ id: 42 })
+    expect(ctx.client.searchImages).toHaveBeenCalledWith({ id: 42 }, undefined)
     expect(result.isError).toBeUndefined()
     const parsed = JSON.parse(result.content[0]?.text ?? '{}') as { fullHDURL: string }
     expect(parsed.fullHDURL).toBe('https://cdn.pixabay.com/full.jpg')

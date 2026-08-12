@@ -97,23 +97,30 @@ export const getImageInputShape = {
 const getImageInputSchema = z.object(getImageInputShape)
 export type GetImageInput = z.infer<typeof getImageInputSchema>
 
-export async function handleSearchImages(ctx: ToolContext, rawInput: unknown): Promise<ToolResult> {
+export async function handleSearchImages(
+  ctx: ToolContext,
+  rawInput: unknown,
+  signal?: AbortSignal,
+): Promise<ToolResult> {
   const input = searchImagesInputSchema.parse(rawInput)
-  const response = await ctx.client.searchImages({
-    q: input.query,
-    lang: input.lang,
-    image_type: input.image_type,
-    orientation: input.orientation,
-    category: input.category,
-    colors: input.colors,
-    min_width: input.min_width,
-    min_height: input.min_height,
-    editors_choice: input.editors_choice,
-    safesearch: input.safesearch,
-    order: input.order,
-    page: input.page,
-    per_page: input.per_page,
-  })
+  const response = await ctx.client.searchImages(
+    {
+      q: input.query,
+      lang: input.lang,
+      image_type: input.image_type,
+      orientation: input.orientation,
+      category: input.category,
+      colors: input.colors,
+      min_width: input.min_width,
+      min_height: input.min_height,
+      editors_choice: input.editors_choice,
+      safesearch: input.safesearch,
+      order: input.order,
+      page: input.page,
+      per_page: input.per_page,
+    },
+    signal,
+  )
 
   if (response.hits.length === 0) {
     return toErrorResult(
@@ -124,9 +131,13 @@ export async function handleSearchImages(ctx: ToolContext, rawInput: unknown): P
   return toSuccessResult(response.hits.map(formatImageSummary))
 }
 
-export async function handleGetImage(ctx: ToolContext, rawInput: unknown): Promise<ToolResult> {
+export async function handleGetImage(
+  ctx: ToolContext,
+  rawInput: unknown,
+  signal?: AbortSignal,
+): Promise<ToolResult> {
   const input = getImageInputSchema.parse(rawInput)
-  const response = await ctx.client.searchImages({ id: input.id })
+  const response = await ctx.client.searchImages({ id: input.id }, signal)
   const image = response.hits[0]
   if (!image) {
     return toErrorResult(`No image found with id ${input.id}.`)
@@ -144,8 +155,9 @@ export function registerImageTools(server: McpServer, ctx: ToolContext): void {
         'token-efficient summary per match (one representative image URL plus metadata) — ' +
         'call pixabay_get_image with an id for the full set of size tiers.',
       inputSchema: searchImagesInputShape,
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async (args) => handleSearchImages(ctx, args),
+    async (args, extra) => handleSearchImages(ctx, args, extra.signal),
   )
 
   server.registerTool(
@@ -156,7 +168,8 @@ export function registerImageTools(server: McpServer, ctx: ToolContext): void {
         'Fetch a single Pixabay image by id (e.g. one returned from pixabay_search_images), ' +
         'including every size tier Pixabay provides for it.',
       inputSchema: getImageInputShape,
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async (args) => handleGetImage(ctx, args),
+    async (args, extra) => handleGetImage(ctx, args, extra.signal),
   )
 }
