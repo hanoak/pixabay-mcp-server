@@ -97,8 +97,7 @@ once v1 has real usage and a concrete gap shows up (categories-as-resource? a cu
       since Pixabay offers no header alternative to leak-proof by default.
 - [ ] `[v1]` Protect the publish path: npm account 2FA + OIDC trusted publishing (or a
       scoped least-privilege automation token).
-- [ ] `[v1]` Least-privilege GitHub Actions permissions (top-level `permissions: contents:
-    read`).
+- [ ] `[v1]` Least-privilege GitHub Actions permissions (top-level `permissions: contents: read`).
 - [ ] `[v1]` Dependency license-compliance check in CI (permissive-license allowlist).
 - [ ] `[v1]` SSRF guard on any URL taken from an API response, if a future feature ever adds
       a server-side follow-up fetch (none exists in v1 — Pixabay has no
