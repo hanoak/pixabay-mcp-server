@@ -69,6 +69,12 @@ describe('MCP server integration (in-memory Client<->Server)', () => {
     ])
   })
 
+  it('delivers the server instructions on initialize', async () => {
+    const client = await connectedClient(fakeCtx())
+
+    expect(client.getInstructions()).toContain('safesearch` defaults to true')
+  })
+
   it('calls pixabay_search_images over the transport and returns a real result', async () => {
     const ctx = fakeCtx()
     const client = await connectedClient(ctx)
