@@ -1,3 +1,4 @@
+import { BIN_NAME } from '../version.js'
 import type { Redactor } from './redact.js'
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
@@ -33,7 +34,7 @@ export function createLogger(level: LogLevel = 'info', redactor: Redactor = NOOP
   const threshold = LEVEL_WEIGHT[level]
   const log = (messageLevel: LogLevel, message: string): void => {
     if (LEVEL_WEIGHT[messageLevel] >= threshold) {
-      console.error(`[${messageLevel}] ${redactor.redact(message)}`)
+      console.error(`[${BIN_NAME}] [${messageLevel}] ${redactor.redact(message)}`)
     }
   }
 
