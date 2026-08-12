@@ -9,3 +9,7 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as {
 
 export const name = packageJson.name
 export const version = packageJson.version
+
+// The bin/CLI name, distinct from `name` (the scoped npm package name) — used in
+// --help/--version output and as the log-line prefix.
+export const BIN_NAME = 'pixabay-mcp-server'

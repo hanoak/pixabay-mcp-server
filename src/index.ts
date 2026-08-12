@@ -1,12 +1,10 @@
 import { ConfigError } from './config.js'
 import { nodeVersionError } from './lib/node-guard.js'
 import { runServer } from './server.js'
-import { version } from './version.js'
+import { BIN_NAME, version } from './version.js'
 
 // Entry point for the `pixabay-mcp-server` bin. The tsup build prepends the
 // `#!/usr/bin/env node` shebang so this file is directly executable via npx.
-
-const BIN_NAME = 'pixabay-mcp-server'
 
 const HELP = `${BIN_NAME} v${version}
 An unofficial Model Context Protocol (MCP) server for the Pixabay API.
