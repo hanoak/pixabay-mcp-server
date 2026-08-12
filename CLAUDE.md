@@ -45,7 +45,7 @@ This bar and most of the conventions below are carried over as-is from the autho
   `X-RateLimit-Remaining` / `X-RateLimit-Reset` response headers; exceeding it returns
   `429` with an `"API rate limit exceeded"` message.
 - **Mandatory 24-hour response caching.** Unlike Unsplash (where caching was explicitly
-  skipped), Pixabay's terms *require* callers to cache results for 24 hours to keep the API
+  skipped), Pixabay's terms _require_ callers to cache results for 24 hours to keep the API
   fast for everyone. This is a required architecture component here, not an optimization —
   see the cache layer below.
 - **No permanent hotlinking.** Pixabay's terms disallow using Pixabay CDN URLs as permanent
