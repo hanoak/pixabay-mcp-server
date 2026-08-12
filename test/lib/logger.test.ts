@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLogger, parseLogLevel } from '../../src/lib/logger.js'
+import { createRedactor } from '../../src/lib/redact.js'
 
 describe('parseLogLevel', () => {
   it('accepts known levels', () => {
@@ -39,5 +40,19 @@ describe('createLogger', () => {
 
     logger.warn('should appear')
     expect(errorSpy).toHaveBeenCalledWith('[warn] should appear')
+  })
+
+  it('redacts every message through the given redactor before writing it', () => {
+    const logger = createLogger('debug', createRedactor('super-secret-key'))
+    logger.info('url was https://pixabay.com/api/?key=super-secret-key&q=cats')
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[info] url was https://pixabay.com/api/?key=[REDACTED]&q=cats',
+    )
+  })
+
+  it('defaults to a no-op redactor when none is given', () => {
+    const logger = createLogger('debug')
+    logger.info('PIXABAY_API_KEY is not set')
+    expect(errorSpy).toHaveBeenCalledWith('[info] PIXABAY_API_KEY is not set')
   })
 })
