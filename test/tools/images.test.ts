@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { handleGetImage, handleSearchImages, type ToolContext } from '../../src/tools/images.js'
+import { handleGetImage, handleSearchImages } from '../../src/tools/images.js'
+import type { ToolContext } from '../../src/tools/shared.js'
 import type { ImageSearchResponse } from '../../src/schemas/image.js'
 
 function fakeCtx(searchImagesResult: ImageSearchResponse): ToolContext {
