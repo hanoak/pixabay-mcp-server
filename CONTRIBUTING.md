@@ -82,6 +82,13 @@ an intro paragraph (Changesets always inserts new version sections directly afte
 Changelog` heading). **Tool names, input parameters, and output shapes are part of the public
 contract** — an incompatible change to any of them ships only in a **major** release.
 
+**Every PR with a user-facing change must include a changeset**: run `npx changeset add`,
+pick the right bump type (major/minor/patch per the contract rule above), and commit the
+generated `.changeset/*.md` file alongside your change. Without one, `changesets/action` has
+nothing to version on merge to `main` and falls through to publishing directly — skipping the
+"Version Packages" PR review step and leaving the CHANGELOG entry unwritten. `chore`/`docs`/
+`test`-only changes with no effect on the published package don't need one.
+
 When something must change incompatibly, we deprecate before removing: the old behavior is
 kept for at least one subsequent **minor** release, called out in the CHANGELOG, and — where
 possible — flagged in the tool description. Removal then happens in the next major. Additive
