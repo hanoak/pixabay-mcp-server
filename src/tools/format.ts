@@ -1,6 +1,12 @@
 import type { Image } from '../schemas/image.js'
 import type { Video, VideoVariant } from '../schemas/video.js'
 
+// Every formatter below passes Pixabay CDN URLs straight through, unmodified — this is
+// a deliberate reading of "ephemeral conversational display" as distinct from
+// Pixabay's "permanent hotlinking in an app" restriction, which is a gray area, not a
+// settled legal conclusion. See README's "Image & Video URLs" section. Revisit if
+// Pixabay ever clarifies the term.
+
 type Nullish<T> = T | null | undefined
 
 export function buildAttribution(user: Nullish<string>): string {
