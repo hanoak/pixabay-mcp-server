@@ -1,6 +1,6 @@
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { afterEach, describe, expect, it } from 'vitest'
 
 // Spawns the actual built bin (npm test's pretest runs the build first) — stdout is
@@ -62,4 +62,43 @@ describe('stdout purity', () => {
       expect(parsed).toMatchObject({ jsonrpc: '2.0' })
     }
   }, 10_000)
+
+  it('shuts down cleanly when stdin closes, instead of lingering as an orphan', async () => {
+    child = spawn('node', [distEntry], {
+      env: { ...process.env, PIXABAY_API_KEY: 'test-key' },
+    })
+
+    const exited = new Promise<number | null>((resolve) => {
+      child?.on('exit', (code) => resolve(code))
+    })
+
+    // Give the server a moment to connect before closing its input, the same way
+    // an MCP client closes the pipe when it's done with the server.
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    child.stdin.end()
+
+    const code = await Promise.race([
+      exited,
+      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 5000)),
+    ])
+
+    expect(code).toBe(0)
+  }, 10_000)
+})
+
+describe('--version / --help', () => {
+  it('--version prints the package version and exits 0', () => {
+    const output = execFileSync('node', [distEntry, '--version'], {
+      env: { ...process.env, PIXABAY_API_KEY: 'test-key' },
+    }).toString()
+    expect(output.trim()).toMatch(/^\d+\.\d+\.\d+$/)
+  })
+
+  it('--help prints usage and exits 0', () => {
+    const output = execFileSync('node', [distEntry, '--help'], {
+      env: { ...process.env, PIXABAY_API_KEY: 'test-key' },
+    }).toString()
+    expect(output).toContain('pixabay-mcp-server')
+    expect(output).toContain('PIXABAY_API_KEY')
+  })
 })
