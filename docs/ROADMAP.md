@@ -98,25 +98,45 @@ once v1 has real usage and a concrete gap shows up (categories-as-resource? a cu
 
 ## 2. Security & secrets
 
-- [ ] `[v1]` API key via env var only (`PIXABAY_API_KEY`); never logged/committed.
-- [ ] `[v1]` `.env.example` committed; real `.env` gitignored.
-- [ ] `[v1]` Secret scanning (gitleaks pre-commit hook + CI full-history scan).
-- [ ] `[v1]` Dependency security: `npm audit`, Dependabot, minimal deps.
-- [ ] `[v1]` Input sanitization before hitting the API (zod schemas + clamping + encoding).
-- [ ] `[v1]` Supply-chain: `npm publish --provenance`, committed lockfile, SHA-pinned CI
-      actions.
-- [ ] `[v1]` **Fail-fast startup validation** of `PIXABAY_API_KEY` — actionable stderr
-      message + non-zero exit, not a cryptic 401/403 mid-conversation.
-- [ ] `[v1]` **Redact the `key` query parameter** from every log line, error message, and
+- [x] `[v1]` API key via env var only (`PIXABAY_API_KEY`); never logged/committed. ✅
+      `config.ts` reads it from `process.env` only; the redactor (below) keeps it out
+      of logs/errors even if a bug ever tried to include it.
+- [x] `[v1]` `.env.example` committed; real `.env` gitignored. ✅ `.env` was already
+      gitignored since §0's scaffold; `.env.example` documents both env vars.
+- [~] `[v1]` Secret scanning (gitleaks pre-commit hook + CI full-history scan). The
+  pre-commit hook (`gitleaks protect --staged`) has been live since §0. The CI
+  full-history scan is a GitHub Actions job — explicitly deferred to §5.
+- [x] `[v1]` Dependency security: `npm audit`, Dependabot, minimal deps. ✅
+      `npm audit --omit=dev --audit-level=high` is currently clean; `.github/
+dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
+      (`@modelcontextprotocol/sdk`, `zod`).
+- [x] `[v1]` Input sanitization before hitting the API (zod schemas + clamping + encoding).
+      ✅ Done in §7's tool schemas (enums, numeric bounds) and `pixabay/client.ts`'s
+      `buildUrl`, which encodes every param via `URLSearchParams`.
+- [~] `[v1]` Supply-chain: `npm publish --provenance`, committed lockfile, SHA-pinned CI
+  actions. `package-lock.json` has been committed since §0. Provenance and
+  SHA-pinned Actions require the actual publish/CI workflows — deferred to §5.
+- [x] `[v1]` **Fail-fast startup validation** of `PIXABAY_API_KEY` — actionable stderr
+      message + non-zero exit, not a cryptic 401/403 mid-conversation. ✅ Done in the
+      §0/§7 pass (`config.ts` + `server.ts`'s `runServer`).
+- [x] `[v1]` **Redact the `key` query parameter** from every log line, error message, and
       `isError` tool result — this is the single most important security control here,
-      since Pixabay offers no header alternative to leak-proof by default.
+      since Pixabay offers no header alternative to leak-proof by default. ✅
+      `lib/redact.ts`'s `createRedactor`, wired into `createLogger` (every log line)
+      and `pixabay/client.ts` (a raw network error thrown by `fetch()` itself, which
+      can embed the request URL, plus the non-ok-response error body as
+      defense-in-depth).
 - [ ] `[v1]` Protect the publish path: npm account 2FA + OIDC trusted publishing (or a
-      scoped least-privilege automation token).
+      scoped least-privilege automation token). Deferred to §5 — this is configured
+      alongside the actual publish workflow.
 - [ ] `[v1]` Least-privilege GitHub Actions permissions (top-level `permissions: contents: read`).
+      Deferred to §5 — no GitHub Actions workflows exist yet to scope.
 - [ ] `[v1]` Dependency license-compliance check in CI (permissive-license allowlist).
-- [ ] `[v1]` SSRF guard on any URL taken from an API response, if a future feature ever adds
+      Deferred to §5 — a CI job, not code in this repo yet.
+- [x] `[v1]` SSRF guard on any URL taken from an API response, if a future feature ever adds
       a server-side follow-up fetch (none exists in v1 — Pixabay has no
-      `download_location`-style endpoint to call back to).
+      `download_location`-style endpoint to call back to). ✅ Not applicable — confirmed
+      no such feature exists in this codebase; nothing to guard.
 
 ## 3. Reliability & robustness
 
