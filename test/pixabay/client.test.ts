@@ -21,6 +21,7 @@ function makeClient(overrides: Partial<PixabayClientConfig> = {}) {
     cache: overrides.cache ?? createCache(),
     logger,
     redactor: overrides.redactor ?? createRedactor(apiKey),
+    ...(overrides.timeoutMs === undefined ? {} : { timeoutMs: overrides.timeoutMs }),
   }
   return { client: createPixabayClient(config), logger, config }
 }
@@ -99,7 +100,7 @@ describe('createPixabayClient', () => {
 
     await expect(client.searchImages({})).rejects.toMatchObject({
       status: 400,
-      message: "Bad Request. Missing parameter 'q'.",
+      message: expect.stringContaining("Bad Request. Missing parameter 'q'."),
     })
     await expect(client.searchImages({})).rejects.toBeInstanceOf(PixabayApiError)
     await expect(client.searchImages({})).rejects.not.toMatchObject({
@@ -222,6 +223,78 @@ describe('createPixabayClient', () => {
     })
     await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({
       message: expect.stringContaining('[REDACTED]'),
+    })
+  })
+
+  it('retries exactly once after a fixed delay on a 5xx', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('Bad Gateway', { status: 502, statusText: 'Bad Gateway' }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ total: 1, totalHits: 1, hits: [{ id: 1 }] }), {
+          status: 200,
+        }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { client, logger } = makeClient()
+    const result = await client.searchImages({ q: 'cats' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(result.hits).toEqual([{ id: 1 }])
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('retrying once'))
+  })
+
+  it('never retries a 5xx more than once', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response('Bad Gateway', { status: 502, statusText: 'Bad Gateway' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { client } = makeClient()
+
+    await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({ status: 502 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('aborts and reports a clear timeout message when a request takes too long', async () => {
+    const fetchMock = vi.fn().mockImplementation(
+      (_url: unknown, init: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () => {
+            reject(init.signal.reason)
+          })
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { client } = makeClient({ timeoutMs: 10 })
+
+    await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({
+      message: expect.stringContaining('timed out after 0.01s'),
+    })
+  })
+
+  it('aborts the request if the caller-provided signal fires', async () => {
+    const fetchMock = vi.fn().mockImplementation(
+      (_url: unknown, init: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () => {
+            reject(init.signal.reason)
+          })
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const controller = new AbortController()
+    const { client } = makeClient()
+    const call = client.searchImages({ q: 'cats' }, controller.signal)
+    controller.abort(new Error('caller cancelled'))
+
+    await expect(call).rejects.toMatchObject({
+      message: expect.stringContaining('caller cancelled'),
     })
   })
 })
