@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.hanoak/pixabay-mcp-server",
+  "title": "Pixabay MCP Server",
+  "description": "Unofficial MCP server for the Pixabay API: search and fetch royalty-free images and videos.",
+  "version": "1.0.0",
+  "websiteUrl": "https://github.com/hanoak/pixabay-mcp-server#readme",
+  "repository": {
+    "url": "https://github.com/hanoak/pixabay-mcp-server",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@hanoak/pixabay-mcp-server",
+      "version": "1.0.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PIXABAY_API_KEY",
+          "description": "Your Pixabay API key (sent as the `key` query parameter — Pixabay has no header option).",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "LOG_LEVEL",
+          "description": "Log verbosity; all logs go to stderr.",
+          "default": "info",
+          "choices": ["debug", "info", "warn", "error"]
+        }
+      ]
+    }
+  ]
+}
