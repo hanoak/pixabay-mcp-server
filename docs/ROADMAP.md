@@ -161,23 +161,40 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 
 ## 4. Testing & quality
 
-- [ ] `[v1]` Unit tests with the Pixabay API mocked via dependency injection (fake
-      `fetch`) — zero real API calls in CI.
-- [ ] `[v1]` Unit tests for the cache layer specifically: TTL expiry, key-stripping (the
+- [x] `[v1]` Unit tests with the Pixabay API mocked via dependency injection (fake
+      `fetch`) — zero real API calls in CI. ✅ True throughout every test file written
+      so far — `vi.stubGlobal('fetch', ...)` with fake `Response`s, never a real call.
+- [x] `[v1]` Unit tests for the cache layer specifically: TTL expiry, key-stripping (the
       cache key must never contain the raw API key), normalization (param order doesn't
-      create duplicate cache entries).
-- [ ] `[v1]` Type-checking, lint, and format checks in CI.
-- [ ] `[v1]` Coverage thresholds (v8, regression floor in `vitest.config.ts`).
-- [ ] `[v1]` Smoke/integration test for the MCP server handshake (in-memory
-      `Client`↔`Server`).
-- [ ] `[v1]` **Enforce stdout purity**: ESLint `no-console` (allow `console.error` only) + a
-      child-process test asserting stdout carries only valid JSON-RPC.
-- [ ] `[v1]` E2E test that invokes a real tool over the transport for both images and
-      videos.
-- [ ] `[v1]` Validate zod schemas against committed, sanitized **real captured** Pixabay
-      response fixtures (images + videos).
-- [ ] `[v1]` CI test matrix: Node 20/22 × Linux/macOS/Windows (+ `.nvmrc`).
-- [ ] `[v1]` Document MCP Inspector in the dev/contributor workflow.
+      create duplicate cache entries). ✅ Done in §1's pass (`test/lib/cache.test.ts`).
+- [ ] `[v1]` Type-checking, lint, and format checks in CI. Deferred to §5 — a GitHub
+      Actions workflow, not code in this repo yet; run manually via `npm run
+typecheck`/`lint`/`format:check` until then.
+- [x] `[v1]` Coverage thresholds (v8, regression floor in `vitest.config.ts`). ✅ Raised
+      this pass to 90/90/90/90, just below the suite's current 91.6/92.5/92.7/91.8.
+- [x] `[v1]` Smoke/integration test for the MCP server handshake (in-memory
+      `Client`↔`Server`). ✅ `test/server.integration.test.ts` — a real `Client` and
+      real `Server` over `InMemoryTransport`, only the `PixabayClient` faked.
+- [x] `[v1]` **Enforce stdout purity**: ESLint `no-console` (allow `console.error` only) + a
+      child-process test asserting stdout carries only valid JSON-RPC. ✅ ESLint rule
+      since §0; `test/stdout-purity.test.ts` spawns the built bin and validates every
+      stdout line. A new `pretest` script (`npm run build`) keeps `dist/` fresh for it.
+- [x] `[v1]` E2E test that invokes a real tool over the transport for both images and
+      videos. ✅ Part of `test/server.integration.test.ts` —
+      `pixabay_search_images`/`pixabay_search_videos`/`pixabay_get_image` calls over
+      the real transport.
+- [x] `[v1]` Validate zod schemas against committed, sanitized **real captured** Pixabay
+      response fixtures (images + videos). ✅ with a caveat: `test/fixtures/` uses
+      Pixabay's own documented example responses from `pixabay.com/api/docs/`, not a
+      response actually captured from a live call — no `PIXABAY_API_KEY` is available
+      in this dev/CI environment. Still genuine Pixabay-sourced field shapes, not
+      hand-invented data. Worth re-validating against a real live response if/when a
+      key is available.
+- [ ] `[v1]` CI test matrix: Node 20/22 × Linux/macOS/Windows (+ `.nvmrc`). `.nvmrc` has
+      existed since §0; the matrix itself is a GitHub Actions job — deferred to §5.
+- [x] `[v1]` Document MCP Inspector in the dev/contributor workflow. ✅
+      `CONTRIBUTING.md`'s "Using MCP Inspector" section — the rest of that document is
+      §6's job.
 
 ## 5. CI/CD & release automation
 
