@@ -106,7 +106,9 @@ describe('MCP server integration (in-memory Client<->Server)', () => {
     const result = await client.callTool({ name: 'pixabay_get_image', arguments: { id: 1 } })
 
     expect(result.isError).toBeUndefined()
-    expect(ctx.client.searchImages).toHaveBeenCalledWith({ id: 1 })
+    // The real transport always provides a genuine AbortSignal (tied to
+    // notifications/cancelled), unlike the unit tests where it's undefined.
+    expect(ctx.client.searchImages).toHaveBeenCalledWith({ id: 1 }, expect.any(AbortSignal))
   })
 
   it('surfaces an empty search as isError:true, not a protocol error', async () => {

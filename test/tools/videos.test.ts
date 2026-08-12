@@ -20,6 +20,7 @@ describe('handleSearchVideos', () => {
 
     expect(ctx.client.searchVideos).toHaveBeenCalledWith(
       expect.objectContaining({ q: 'ocean', safesearch: true }),
+      undefined,
     )
   })
 
@@ -69,7 +70,7 @@ describe('handleGetVideo', () => {
 
     const result = await handleGetVideo(ctx, { id: 42 })
 
-    expect(ctx.client.searchVideos).toHaveBeenCalledWith({ id: 42 })
+    expect(ctx.client.searchVideos).toHaveBeenCalledWith({ id: 42 }, undefined)
     expect(result.isError).toBeUndefined()
     const parsed = JSON.parse(result.content[0]?.text ?? '{}') as {
       videos: { large: { url: string } }

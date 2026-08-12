@@ -73,21 +73,28 @@ export const getVideoInputShape = {
 const getVideoInputSchema = z.object(getVideoInputShape)
 export type GetVideoInput = z.infer<typeof getVideoInputSchema>
 
-export async function handleSearchVideos(ctx: ToolContext, rawInput: unknown): Promise<ToolResult> {
+export async function handleSearchVideos(
+  ctx: ToolContext,
+  rawInput: unknown,
+  signal?: AbortSignal,
+): Promise<ToolResult> {
   const input = searchVideosInputSchema.parse(rawInput)
-  const response = await ctx.client.searchVideos({
-    q: input.query,
-    lang: input.lang,
-    video_type: input.video_type,
-    category: input.category,
-    min_width: input.min_width,
-    min_height: input.min_height,
-    editors_choice: input.editors_choice,
-    safesearch: input.safesearch,
-    order: input.order,
-    page: input.page,
-    per_page: input.per_page,
-  })
+  const response = await ctx.client.searchVideos(
+    {
+      q: input.query,
+      lang: input.lang,
+      video_type: input.video_type,
+      category: input.category,
+      min_width: input.min_width,
+      min_height: input.min_height,
+      editors_choice: input.editors_choice,
+      safesearch: input.safesearch,
+      order: input.order,
+      page: input.page,
+      per_page: input.per_page,
+    },
+    signal,
+  )
 
   if (response.hits.length === 0) {
     return toErrorResult(
@@ -98,9 +105,13 @@ export async function handleSearchVideos(ctx: ToolContext, rawInput: unknown): P
   return toSuccessResult(response.hits.map(formatVideoSummary))
 }
 
-export async function handleGetVideo(ctx: ToolContext, rawInput: unknown): Promise<ToolResult> {
+export async function handleGetVideo(
+  ctx: ToolContext,
+  rawInput: unknown,
+  signal?: AbortSignal,
+): Promise<ToolResult> {
   const input = getVideoInputSchema.parse(rawInput)
-  const response = await ctx.client.searchVideos({ id: input.id })
+  const response = await ctx.client.searchVideos({ id: input.id }, signal)
   const video = response.hits[0]
   if (!video) {
     return toErrorResult(`No video found with id ${input.id}.`)
@@ -118,8 +129,9 @@ export function registerVideoTools(server: McpServer, ctx: ToolContext): void {
         'token-efficient summary per match (one representative video URL plus metadata) — ' +
         'call pixabay_get_video with an id for the full set of size tiers.',
       inputSchema: searchVideosInputShape,
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async (args) => handleSearchVideos(ctx, args),
+    async (args, extra) => handleSearchVideos(ctx, args, extra.signal),
   )
 
   server.registerTool(
@@ -130,7 +142,8 @@ export function registerVideoTools(server: McpServer, ctx: ToolContext): void {
         'Fetch a single Pixabay video by id (e.g. one returned from pixabay_search_videos), ' +
         'including every size tier Pixabay provides for it.',
       inputSchema: getVideoInputShape,
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async (args) => handleGetVideo(ctx, args),
+    async (args, extra) => handleGetVideo(ctx, args, extra.signal),
   )
 }
