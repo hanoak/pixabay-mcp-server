@@ -6,7 +6,7 @@ first release.
 
 ## Roadmap
 
-### 🔲 v1 — not started
+### 🚧 v1 — in progress
 
 The public, read-only surface: search + lookup tools for Pixabay **images** and **videos**;
 a mandatory 24-hour response cache (Pixabay's terms require it); default `safesearch=true`;
@@ -98,7 +98,7 @@ once v1 has real usage and a concrete gap shows up (categories-as-resource? a cu
 - [ ] `[v1]` Protect the publish path: npm account 2FA + OIDC trusted publishing (or a
       scoped least-privilege automation token).
 - [ ] `[v1]` Least-privilege GitHub Actions permissions (top-level `permissions: contents:
-      read`).
+    read`).
 - [ ] `[v1]` Dependency license-compliance check in CI (permissive-license allowlist).
 - [ ] `[v1]` SSRF guard on any URL taken from an API response, if a future feature ever adds
       a server-side follow-up fetch (none exists in v1 — Pixabay has no
@@ -160,21 +160,41 @@ once v1 has real usage and a concrete gap shows up (categories-as-resource? a cu
 
 ## 7. API surface / DX of the server
 
-- [ ] `[v1]` Decide the initial tool set: `pixabay_search_images`, `pixabay_get_image`,
+- [x] `[v1]` Decide the initial tool set: `pixabay_search_images`, `pixabay_get_image`,
       `pixabay_search_videos`, `pixabay_get_video` — confirm against the current docs
       whether an `id` lookup is a distinct endpoint or a filter on search before finalizing
-      tool boundaries.
-- [ ] `[v1]` Consistent, well-described tool schemas (descriptions matter — the LLM reads
-      them).
-- [ ] `[v1]` Token-efficient output shape (trim Pixabay's response to what a tool call
-      actually needs).
-- [ ] `[v1]` Pagination support (`page`/`per_page`, 3–200 per Pixabay's bounds).
-- [ ] `[v1]` Clamp/normalize params to Pixabay's documented bounds; zod enums for
-      `image_type`/`orientation`/`category`/`order`/`colors`; URL-encode `q`.
-- [ ] `[v1]` Return **hotlinkable image/video URLs + metadata as text, never base64 blobs**.
-- [ ] `[v1]` Offer the appropriate size tier per use case (`previewURL`/`webformatURL`/
+      tool boundaries. ✅ Confirmed by fetching `pixabay.com/api/docs/` directly: `id` is a
+      filter on the same search endpoint for both images and videos, not a separate route
+      — so `get_image`/`get_video` call the same `PixabayClient.searchImages`/
+      `searchVideos` methods as search, just with `id` set (`src/tools/images.ts`,
+      `src/tools/videos.ts`).
+- [x] `[v1]` Consistent, well-described tool schemas (descriptions matter — the LLM reads
+      them). ✅ Zod shapes with a `.describe()` on every field, including which Pixabay
+      default applies when a field is omitted (`src/tools/images.ts`,
+      `src/tools/videos.ts`).
+- [x] `[v1]` Token-efficient output shape (trim Pixabay's response to what a tool call
+      actually needs). ✅ `src/tools/format.ts`'s summary formatters drop vanity metrics
+      (views/downloads/likes/comments) entirely and return exactly one URL tier per
+      search hit; detail formatters (get-by-id) return the full set. See "offer the
+      appropriate size tier" below for the summary/detail split.
+- [x] `[v1]` Pagination support (`page`/`per_page`, 3–200 per Pixabay's bounds). ✅
+      `page`/`per_page` on both search tools, `per_page` clamped `min(3).max(200)` via
+      zod.
+- [x] `[v1]` Clamp/normalize params to Pixabay's documented bounds; zod enums for
+      `image_type`/`orientation`/`category`/`order`/`colors`; URL-encode `q`. ✅ zod enums
+      for all listed fields plus `video_type` (videos support `category` but not
+      `colors`/`orientation` — confirmed distinct from images' parameter set); `q`
+      URL-encoding comes from `URLSearchParams` in `src/pixabay/client.ts`'s `buildUrl`.
+- [x] `[v1]` Return **hotlinkable image/video URLs + metadata as text, never base64
+      blobs**. ✅ `src/tools/format.ts` returns URL strings only; the accompanying
+      hotlinking-in-conversation policy write-up (README + code comment) is explicitly
+      §1's job, not resolved here.
+- [x] `[v1]` Offer the appropriate size tier per use case (`previewURL`/`webformatURL`/
       `largeImageURL`/`fullHDURL` for images; `tiny`/`small`/`medium`/`large` for videos)
-      instead of always returning the largest asset.
+      instead of always returning the largest asset. ✅ Search results
+      (`formatImageSummary`/`formatVideoSummary`) return one balanced default tier
+      (`webformatURL` / `videos.medium`); `pixabay_get_image`/`pixabay_get_video` return
+      every tier Pixabay provided, so a caller with a specific id can pick what fits.
 
 ## 8. Distribution & runtime
 
