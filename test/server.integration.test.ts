@@ -134,4 +134,29 @@ describe('MCP server integration (in-memory Client<->Server)', () => {
     expect(result.isError).toBe(true)
     expect(firstText(result.content)).toMatch(/no images found/i)
   })
+
+  it('lists and reads the usage-guide resource over the transport', async () => {
+    const client = await connectedClient(fakeCtx())
+
+    const { resources } = await client.listResources()
+    expect(resources.map((r) => r.uri)).toContain('pixabay://guides/usage')
+
+    const { contents } = await client.readResource({ uri: 'pixabay://guides/usage' })
+    const first = contents[0]
+    expect(first && 'text' in first ? first.text : undefined).toContain('Pixabay Content License')
+  })
+
+  it('lists and gets the find_media prompt over the transport', async () => {
+    const client = await connectedClient(fakeCtx())
+
+    const { prompts } = await client.listPrompts()
+    expect(prompts.map((p) => p.name)).toContain('find_media')
+
+    const { messages } = await client.getPrompt({
+      name: 'find_media',
+      arguments: { subject: 'sunset', media_type: 'images' },
+    })
+    const text = firstText(messages.map((m) => m.content))
+    expect(text).toContain('pixabay_search_images with query: "sunset"')
+  })
 })

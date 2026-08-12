@@ -5,6 +5,8 @@ import { createCache } from './lib/cache.js'
 import { createLogger, type Logger } from './lib/logger.js'
 import { createRedactor } from './lib/redact.js'
 import { createPixabayClient, type PixabayClient } from './pixabay/client.js'
+import { registerPrompts } from './prompts.js'
+import { registerResources } from './resources.js'
 import { registerTools } from './tools/index.js'
 import { name, version } from './version.js'
 
@@ -39,6 +41,8 @@ export const SERVER_INSTRUCTIONS = [
 export function createServer(ctx: ServerContext): McpServer {
   const server = new McpServer({ name, version }, { instructions: SERVER_INSTRUCTIONS })
   registerTools(server, ctx)
+  registerResources(server)
+  registerPrompts(server)
   return server
 }
 
