@@ -1,12 +1,28 @@
 import { createInterface } from 'node:readline'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { afterEach, describe, expect, it } from 'vitest'
+import {
+  execFileSync,
+  execSync,
+  spawn,
+  type ChildProcessWithoutNullStreams,
+} from 'node:child_process'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-// Spawns the actual built bin (npm test's pretest runs the build first) — stdout is
-// the JSON-RPC transport for this stdio MCP server and must never carry anything
-// but valid JSON-RPC messages, at any log level.
+// Spawns the actual built bin — stdout is the JSON-RPC transport for this stdio MCP
+// server and must never carry anything but valid JSON-RPC messages, at any log level.
+const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const distEntry = fileURLToPath(new URL('../dist/index.js', import.meta.url))
+
+beforeAll(() => {
+  // `npm test`'s pretest hook already builds first, but this file can also run
+  // directly (e.g. `vitest run test/stdout-purity.test.ts`) without that hook
+  // firing, so build on demand rather than failing with a confusing
+  // MODULE_NOT_FOUND when dist/ is missing.
+  if (!existsSync(distEntry)) {
+    execSync('npm run build', { cwd: repoRoot, stdio: 'ignore' })
+  }
+}, 120_000)
 
 let child: ChildProcessWithoutNullStreams | undefined
 
