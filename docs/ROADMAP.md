@@ -233,20 +233,30 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 
 ## 6. Developer & contributor experience
 
-- [ ] `[v1]` README: quick start, `npx` one-liner, Claude Desktop/Cursor config, tool
-      reference.
-- [ ] `[v1]` CONTRIBUTING.md (mirror `unsplash-mcp-server`'s structure: dev setup, scripts
+- [x] `[v1]` README: quick start, `npx` one-liner, Claude Desktop/Cursor config, tool
+      reference. ✅ Full rewrite — badges, per-client config snippets (Claude Desktop/Code,
+      Cursor, VS Code, Windsurf, generic stdio), and the real 4-tool reference table.
+      Structure ported from the `pexels-mcp-server` sibling project (not
+      `unsplash-mcp-server`, superseded by the pattern established in §5), content
+      rewritten for Pixabay's actual surface.
+- [x] `[v1]` CONTRIBUTING.md (mirror `unsplash-mcp-server`'s structure: dev setup, scripts
       table, Inspector walkthrough, project conventions, commit/branch rules, versioning
-      policy — no `login`/`logout` section needed here).
-- [ ] `[v1]` CODE_OF_CONDUCT.md.
-- [ ] `[v1]` Issue/PR templates.
-- [ ] `[v1]` LICENSE confirmed permissive (MIT or similar).
-- [ ] `[v1]` SECURITY.md (vulnerability reporting).
-- [ ] `[v1]` Badges: npm version, build status, license.
-- [ ] `[v1]` Semantic versioning commitment.
-- [ ] `[v1]` Explicit no-telemetry / privacy statement ("collects nothing, only contacts
-      pixabay.com").
-- [ ] `[v1]` README troubleshooting section.
+      policy — no `login`/`logout` section needed here). ✅ Mirrors `pexels-mcp-server`'s
+      structure instead (same rationale as the README above); no login/logout section, as
+      specified.
+- [x] `[v1]` CODE_OF_CONDUCT.md. ✅ Standard Contributor Covenant 2.1.
+- [x] `[v1]` Issue/PR templates. ✅ Bug report + feature request issue templates (blank
+      issues disabled, security advisory contact link), PR template checklist.
+- [x] `[v1]` LICENSE confirmed permissive (MIT or similar). ✅ MIT, confirmed since §0.
+- [x] `[v1]` SECURITY.md (vulnerability reporting). ✅ Private reporting via GitHub security
+      advisories.
+- [x] `[v1]` Badges: npm version, build status, license. ✅ README header — npm
+      version/downloads, CI status, license, Node version, PRs-welcome.
+- [x] `[v1]` Semantic versioning commitment. ✅ README's Roadmap section +
+      CONTRIBUTING.md's Versioning & deprecation policy section.
+- [x] `[v1]` Explicit no-telemetry / privacy statement ("collects nothing, only contacts
+      pixabay.com"). ✅ README's Privacy & security section.
+- [x] `[v1]` README troubleshooting section. ✅ Done, plus a matching FAQ section.
 
 ## 7. API surface / DX of the server
 
@@ -367,7 +377,8 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 
 ## 14. Governance
 
-- [ ] `[v1]` Add CODEOWNERS.
+- [x] `[v1]` Add CODEOWNERS. ✅ Bundled into §6's community-health-files commit since it's
+      one line and directly adjacent — `* @hanoak`.
 - [ ] `[post-v1]` `FUNDING.yml` — only if the project actually seeks sponsorship.
 
 ---
