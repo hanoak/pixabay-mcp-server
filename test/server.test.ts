@@ -12,6 +12,7 @@ describe('createServer', () => {
         searchImages: vi.fn(),
         searchVideos: vi.fn(),
       },
+      redact: (input: string) => input,
     }
 
     const server = createServer(ctx)

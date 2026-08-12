@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { handleGetImage, handleSearchImages } from '../../src/tools/images.js'
 import type { ToolContext } from '../../src/tools/shared.js'
 import type { ImageSearchResponse } from '../../src/schemas/image.js'
+import { PixabayApiError } from '../../src/pixabay/errors.js'
 
 function fakeCtx(searchImagesResult: ImageSearchResponse): ToolContext {
   return {
@@ -9,6 +10,7 @@ function fakeCtx(searchImagesResult: ImageSearchResponse): ToolContext {
       searchImages: vi.fn().mockResolvedValue(searchImagesResult),
       searchVideos: vi.fn(),
     },
+    redact: (input: string) => input,
   }
 }
 
@@ -59,6 +61,21 @@ describe('handleSearchImages', () => {
     expect(result.isError).toBe(true)
     expect(result.content[0]?.text).toMatch(/no images found/i)
   })
+
+  it('catches a client error, redacting it, instead of letting it throw', async () => {
+    const ctx: ToolContext = {
+      client: {
+        searchImages: vi.fn().mockRejectedValue(new PixabayApiError(403, 'forbidden: secret-key')),
+        searchVideos: vi.fn(),
+      },
+      redact: (input: string) => input.replace('secret-key', '[REDACTED]'),
+    }
+
+    const result = await handleSearchImages(ctx, { query: 'cats' })
+
+    expect(result.isError).toBe(true)
+    expect(result.content[0]?.text).toBe('forbidden: [REDACTED]')
+  })
 })
 
 describe('handleGetImage', () => {
@@ -84,5 +101,20 @@ describe('handleGetImage', () => {
 
     expect(result.isError).toBe(true)
     expect(result.content[0]?.text).toMatch(/no image found with id 999999/i)
+  })
+
+  it('catches a client error, redacting it, instead of letting it throw', async () => {
+    const ctx: ToolContext = {
+      client: {
+        searchImages: vi.fn().mockRejectedValue(new Error('boom')),
+        searchVideos: vi.fn(),
+      },
+      redact: (input: string) => input,
+    }
+
+    const result = await handleGetImage(ctx, { id: 1 })
+
+    expect(result.isError).toBe(true)
+    expect(result.content[0]?.text).toBe('Unexpected error: boom')
   })
 })

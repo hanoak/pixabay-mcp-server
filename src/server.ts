@@ -12,6 +12,10 @@ import { name, version } from './version.js'
 
 export interface ServerContext {
   client: PixabayClient
+  // Strips the API key from any text before it reaches a tool's isError result —
+  // a second, mandatory safety net alongside pixabay/client.ts's own source-level
+  // redaction, not a substitute for it.
+  redact: (input: string) => string
 }
 
 // Server-wide guidance sent to clients on `initialize`. This is the one place to
@@ -59,7 +63,7 @@ export async function runServer(): Promise<void> {
   const logger = createLogger(config.logLevel, redactor)
   const cache = createCache()
   const client = createPixabayClient({ apiKey: config.apiKey, cache, logger, redactor })
-  const server = createServer({ client })
+  const server = createServer({ client, redact: redactor.redact })
   const transport = new StdioServerTransport()
   await server.connect(transport)
   logger.info(`${name} v${version} running on stdio`)

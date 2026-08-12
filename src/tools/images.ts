@@ -1,7 +1,12 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { formatImageDetail, formatImageSummary } from './format.js'
-import { toErrorResult, toSuccessResult, type ToolResult } from './result.js'
+import {
+  toErrorResult,
+  toErrorResultFromError,
+  toSuccessResult,
+  type ToolResult,
+} from './result.js'
 import { CATEGORY_VALUES, ORDER_VALUES, type ToolContext } from './shared.js'
 
 const IMAGE_TYPE_VALUES = ['all', 'photo', 'illustration', 'vector'] as const
@@ -103,32 +108,36 @@ export async function handleSearchImages(
   signal?: AbortSignal,
 ): Promise<ToolResult> {
   const input = searchImagesInputSchema.parse(rawInput)
-  const response = await ctx.client.searchImages(
-    {
-      q: input.query,
-      lang: input.lang,
-      image_type: input.image_type,
-      orientation: input.orientation,
-      category: input.category,
-      colors: input.colors,
-      min_width: input.min_width,
-      min_height: input.min_height,
-      editors_choice: input.editors_choice,
-      safesearch: input.safesearch,
-      order: input.order,
-      page: input.page,
-      per_page: input.per_page,
-    },
-    signal,
-  )
-
-  if (response.hits.length === 0) {
-    return toErrorResult(
-      'No images found matching your query. Try a broader search term or fewer filters.',
+  try {
+    const response = await ctx.client.searchImages(
+      {
+        q: input.query,
+        lang: input.lang,
+        image_type: input.image_type,
+        orientation: input.orientation,
+        category: input.category,
+        colors: input.colors,
+        min_width: input.min_width,
+        min_height: input.min_height,
+        editors_choice: input.editors_choice,
+        safesearch: input.safesearch,
+        order: input.order,
+        page: input.page,
+        per_page: input.per_page,
+      },
+      signal,
     )
-  }
 
-  return toSuccessResult(response.hits.map(formatImageSummary))
+    if (response.hits.length === 0) {
+      return toErrorResult(
+        'No images found matching your query. Try a broader search term or fewer filters.',
+      )
+    }
+
+    return toSuccessResult(response.hits.map(formatImageSummary))
+  } catch (error) {
+    return toErrorResultFromError(error, ctx.redact)
+  }
 }
 
 export async function handleGetImage(
@@ -137,12 +146,16 @@ export async function handleGetImage(
   signal?: AbortSignal,
 ): Promise<ToolResult> {
   const input = getImageInputSchema.parse(rawInput)
-  const response = await ctx.client.searchImages({ id: input.id }, signal)
-  const image = response.hits[0]
-  if (!image) {
-    return toErrorResult(`No image found with id ${input.id}.`)
+  try {
+    const response = await ctx.client.searchImages({ id: input.id }, signal)
+    const image = response.hits[0]
+    if (!image) {
+      return toErrorResult(`No image found with id ${input.id}.`)
+    }
+    return toSuccessResult(formatImageDetail(image))
+  } catch (error) {
+    return toErrorResultFromError(error, ctx.redact)
   }
-  return toSuccessResult(formatImageDetail(image))
 }
 
 export function registerImageTools(server: McpServer, ctx: ToolContext): void {
