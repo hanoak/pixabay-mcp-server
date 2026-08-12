@@ -48,38 +48,53 @@ once v1 has real usage and a concrete gap shows up (categories-as-resource? a cu
 
 ## 1. Pixabay API compliance (legal — non-negotiable)
 
-- [ ] `[v1]` **Decide and document the hotlinking-in-conversation policy.** Pixabay's terms
+- [x] `[v1]` **Decide and document the hotlinking-in-conversation policy.** Pixabay's terms
       ban "permanent hotlinking" of images in an app and require downloading to your own
       server for persistent display; this server instead returns Pixabay CDN URLs to an LLM
       client for one ephemeral display per conversation turn. Write down the reasoning
       explicitly (README + a code comment at the URL-selection call site) rather than
-      silently assuming it's fine — revisit if Pixabay ever clarifies the term.
-- [ ] `[v1]` **Implement the mandatory 24-hour response cache** (`src/lib/cache.ts`) — key
+      silently assuming it's fine — revisit if Pixabay ever clarifies the term. ✅ Confirmed
+      the stance with the project owner (documentation-only, no runtime behavior change)
+      before writing anything. README's "Image & Video URLs" section + a comment atop
+      `src/tools/format.ts` explain the ephemeral-display reasoning and its limits.
+- [x] `[v1]` **Implement the mandatory 24-hour response cache** (`src/lib/cache.ts`) — key
       on the normalized request (endpoint + sorted params, with `key` stripped), never on
       the raw querystring. This is a compliance requirement per Pixabay's docs, not an
-      optimization; every outbound GET must route through it.
-- [ ] `[v1]` **No systematic mass downloads** — the API is "made for real human requests."
+      optimization; every outbound GET must route through it. ✅ `createCache`/
+      `buildCacheKey` in `src/lib/cache.ts`, wired into every `pixabay/client.ts` request.
+- [x] `[v1]` **No systematic mass downloads** — the API is "made for real human requests."
       Don't add a tool that auto-paginates an entire result set, and don't retry-loop past
-      the documented rate limit.
-- [ ] `[v1]` Send the API key as the `key` query parameter (Pixabay has no header option) —
+      the documented rate limit. ✅ No such tool exists; the 429 backoff added this pass
+      caps at exactly one considered retry, never a loop.
+- [x] `[v1]` Send the API key as the `key` query parameter (Pixabay has no header option) —
       construct request URLs in one place (`src/pixabay/client.ts`) so redaction has a
-      single choke point.
-- [ ] `[v1]` Respect the rate limit: read `X-RateLimit-Limit` / `X-RateLimit-Remaining` /
+      single choke point. ✅ `buildUrl` in `src/pixabay/client.ts` is that single choke
+      point (built in §7's pass).
+- [x] `[v1]` Respect the rate limit: read `X-RateLimit-Limit` / `X-RateLimit-Remaining` /
       `X-RateLimit-Reset` on every response; on `429` ("API rate limit exceeded"), back off
-      using `X-RateLimit-Reset` rather than blind retry.
-- [ ] `[v1]` Default `safesearch=true` on search/lookup tools (overridable) — an
-      LLM-invoked public media tool must not surface explicit content unprompted.
-- [ ] `[v1]` Surface **optional courtesy attribution** (`"by {user} via Pixabay"` + link to
+      using `X-RateLimit-Reset` rather than blind retry. ✅ `X-RateLimit-Remaining` logged
+      at debug on every response; on 429, backs off using `X-RateLimit-Reset` (capped at
+      Pixabay's documented 60s window) for exactly one retry — fails fast instead of
+      guessing if the header is missing.
+- [x] `[v1]` Default `safesearch=true` on search/lookup tools (overridable) — an
+      LLM-invoked public media tool must not surface explicit content unprompted. ✅ Done
+      in §7's tool schemas (`src/tools/images.ts`, `src/tools/videos.ts`).
+- [x] `[v1]` Surface **optional courtesy attribution** (`"by {user} via Pixabay"` + link to
       `pageURL`) on every image/video result — clearly labeled as courtesy, never described
       as legally required (it isn't — Pixabay License content is usable without
-      attribution).
-- [ ] `[v1]` "Unofficial — not affiliated with or endorsed by Pixabay" disclaimer (README +
-      `package.json` description) + brand/trademark compliance.
-- [ ] `[v1]` Document how to obtain a Pixabay API key (single free tier; verify current
+      attribution). ✅ `buildAttribution` in `src/tools/format.ts` (§7's pass).
+- [x] `[v1]` "Unofficial — not affiliated with or endorsed by Pixabay" disclaimer (README +
+      `package.json` description) + brand/trademark compliance. ✅ In `package.json`'s
+      description since §0's scaffold; README now states it explicitly too.
+- [x] `[v1]` Document how to obtain a Pixabay API key (single free tier; verify current
       signup/approval flow against `pixabay.com/api/docs/` before writing the README, in
-      case Pixabay has since added tiers).
-- [ ] `[v1]` State that each user operates under their own Pixabay API Terms — sets the
-      liability boundary, same pattern as `unsplash-mcp-server`'s README note.
+      case Pixabay has since added tiers). ✅ Verified live against `pixabay.com/api/docs/`
+      — free signup, key shown immediately, no approval step for the default tier; a
+      separate optional "full API access" tier exists (unlocks `fullHDURL`/`imageURL`/
+      `vectorURL`) and this server degrades gracefully without it. Documented in README.
+- [x] `[v1]` State that each user operates under their own Pixabay API Terms — sets the
+      liability boundary, same pattern as `unsplash-mcp-server`'s README note. ✅ In
+      README's "Getting a Pixabay API key" section.
 
 ## 2. Security & secrets
 
