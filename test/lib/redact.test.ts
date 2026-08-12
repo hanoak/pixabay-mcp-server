@@ -30,4 +30,9 @@ describe('createRedactor', () => {
     const redactor = createRedactor('')
     expect(redactor.redact('hello world')).toBe('hello world')
   })
+
+  it('is a safe no-op for a trivially short key, which would mangle unrelated text', () => {
+    const redactor = createRedactor('abc')
+    expect(redactor.redact('abcdef abc123')).toBe('abcdef abc123')
+  })
 })
