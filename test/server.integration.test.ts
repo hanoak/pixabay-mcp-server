@@ -41,6 +41,7 @@ function fakeCtx(): ToolContext {
       searchImages: vi.fn().mockResolvedValue(imageResponse),
       searchVideos: vi.fn().mockResolvedValue(videoResponse),
     },
+    redact: (input: string) => input,
   }
 }
 
@@ -123,6 +124,7 @@ describe('MCP server integration (in-memory Client<->Server)', () => {
         searchImages: vi.fn().mockResolvedValue({ total: 0, totalHits: 0, hits: [] }),
         searchVideos: vi.fn(),
       },
+      redact: (input: string) => input,
     }
     const client = await connectedClient(ctx)
 

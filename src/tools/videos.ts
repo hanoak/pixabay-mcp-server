@@ -1,7 +1,12 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { formatVideoDetail, formatVideoSummary } from './format.js'
-import { toErrorResult, toSuccessResult, type ToolResult } from './result.js'
+import {
+  toErrorResult,
+  toErrorResultFromError,
+  toSuccessResult,
+  type ToolResult,
+} from './result.js'
 import { CATEGORY_VALUES, ORDER_VALUES, type ToolContext } from './shared.js'
 
 const VIDEO_TYPE_VALUES = ['all', 'film', 'animation'] as const
@@ -79,30 +84,34 @@ export async function handleSearchVideos(
   signal?: AbortSignal,
 ): Promise<ToolResult> {
   const input = searchVideosInputSchema.parse(rawInput)
-  const response = await ctx.client.searchVideos(
-    {
-      q: input.query,
-      lang: input.lang,
-      video_type: input.video_type,
-      category: input.category,
-      min_width: input.min_width,
-      min_height: input.min_height,
-      editors_choice: input.editors_choice,
-      safesearch: input.safesearch,
-      order: input.order,
-      page: input.page,
-      per_page: input.per_page,
-    },
-    signal,
-  )
-
-  if (response.hits.length === 0) {
-    return toErrorResult(
-      'No videos found matching your query. Try a broader search term or fewer filters.',
+  try {
+    const response = await ctx.client.searchVideos(
+      {
+        q: input.query,
+        lang: input.lang,
+        video_type: input.video_type,
+        category: input.category,
+        min_width: input.min_width,
+        min_height: input.min_height,
+        editors_choice: input.editors_choice,
+        safesearch: input.safesearch,
+        order: input.order,
+        page: input.page,
+        per_page: input.per_page,
+      },
+      signal,
     )
-  }
 
-  return toSuccessResult(response.hits.map(formatVideoSummary))
+    if (response.hits.length === 0) {
+      return toErrorResult(
+        'No videos found matching your query. Try a broader search term or fewer filters.',
+      )
+    }
+
+    return toSuccessResult(response.hits.map(formatVideoSummary))
+  } catch (error) {
+    return toErrorResultFromError(error, ctx.redact)
+  }
 }
 
 export async function handleGetVideo(
@@ -111,12 +120,16 @@ export async function handleGetVideo(
   signal?: AbortSignal,
 ): Promise<ToolResult> {
   const input = getVideoInputSchema.parse(rawInput)
-  const response = await ctx.client.searchVideos({ id: input.id }, signal)
-  const video = response.hits[0]
-  if (!video) {
-    return toErrorResult(`No video found with id ${input.id}.`)
+  try {
+    const response = await ctx.client.searchVideos({ id: input.id }, signal)
+    const video = response.hits[0]
+    if (!video) {
+      return toErrorResult(`No video found with id ${input.id}.`)
+    }
+    return toSuccessResult(formatVideoDetail(video))
+  } catch (error) {
+    return toErrorResultFromError(error, ctx.redact)
   }
-  return toSuccessResult(formatVideoDetail(video))
 }
 
 export function registerVideoTools(server: McpServer, ctx: ToolContext): void {
