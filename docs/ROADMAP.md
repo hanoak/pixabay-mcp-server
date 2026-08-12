@@ -6,7 +6,7 @@ first release.
 
 ## Roadmap
 
-### 🟡 v1 — feature-complete, pending publish
+### 🟢 v1 — shipped
 
 The public, read-only surface: search + lookup tools for Pixabay **images** and **videos**;
 a mandatory 24-hour response cache (Pixabay's terms require it); default `safesearch=true`;
@@ -14,10 +14,9 @@ courtesy attribution (optional, never gated); a resilient HTTP client (retry/bac
 429/5xx, rate-limit-header awareness); MCP resources/prompts; and the same CI quality gates
 (`unsplash-mcp-server` uses: coverage floor, dependency-license check, package validation,
 cross-platform test matrix, secret scanning). No OAuth, no write endpoints — Pixabay's
-public API doesn't have any. Every `[v1]` checklist item is done except two that need the
-project owner's own action: npm account 2FA/token (§2) and the actual registry/catalog
-submission, which needs the npm package published first (§13). Full detail in the checklist
-below.
+public API doesn't have any. Every `[v1]` checklist item is done: `@hanoak/pixabay-mcp-server`
+is published on npm (with provenance) and listed on the official MCP registry
+(`io.github.hanoak/pixabay-mcp-server`). Full detail in the checklist below.
 
 ### 🔲 v2 — not planned yet
 
@@ -134,15 +133,13 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
       and `pixabay/client.ts` (a raw network error thrown by `fetch()` itself, which
       can embed the request URL, plus the non-ok-response error body as
       defense-in-depth).
-- [ ] `[v1]` Protect the publish path: npm account 2FA + OIDC trusted publishing (or a
-      scoped least-privilege automation token). `release.yml` is wired for a classic
-      `NPM_TOKEN` + provenance (OIDC trusted publishing can't be configured until a
-      package exists on the registry at all). **Needs the project owner's action,
-      not something committable**: (1) enable 2FA on the npm account, (2) generate
-      an automation token and add it as the `NPM_TOKEN` repo secret before the
-      first release can publish, (3) optionally configure OIDC trusted publishing
-      on the package's npmjs.com settings page after that first publish exists, to
-      drop the token entirely.
+- [x] `[v1]` Protect the publish path: npm account 2FA + OIDC trusted publishing (or a
+      scoped least-privilege automation token). ✅ 2FA enabled on the npm account;
+      `NPM_TOKEN` automation token added as a repo secret and confirmed working —
+      `@hanoak/pixabay-mcp-server@1.0.0` published with provenance via `release.yml`.
+      OIDC trusted publishing remains available as an optional follow-up (drop the
+      token entirely) now that the package exists on the registry, but isn't
+      required — the token-based path is a legitimate, already-working option.
 - [x] `[v1]` Least-privilege GitHub Actions permissions (top-level `permissions: contents: read`).
       ✅ All three workflows default to `contents: read`; `release.yml`'s job
       elevates only `contents: write` / `pull-requests: write` / `id-token: write`,
@@ -387,13 +384,14 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 
 ## 13. Discovery & ecosystem
 
-- [~] `[v1]` List on the official MCP registry (`server.json` manifest) + community
-  catalogs (Glama, awesome-mcp-servers, mcp.so, PulseMCP). `server.json` is written
-  and schema-validated, and `package.json`'s `mcpName` matches it for npm ownership
-  verification. **The actual registry submission (`mcp-publisher publish`) and
-  community catalog listings still need the npm package to exist first** — same
-  bootstrap order as §2's OIDC trusted publishing. Do this after the first real
-  `npm publish`.
+- [x] `[v1]` List on the official MCP registry (`server.json` manifest) + community
+      catalogs (Glama, awesome-mcp-servers, mcp.so, PulseMCP). ✅ Published to the
+      official registry via `mcp-publisher publish` (GitHub device-flow auth as
+      `hanoak`) — `io.github.hanoak/pixabay-mcp-server` v1.0.0 is live at
+      registry.modelcontextprotocol.io, status `active`. `glama.json` is already
+      committed, so Glama should pick the server up automatically; awesome-mcp-servers/
+      mcp.so/PulseMCP listings are manual submissions the project owner can do at
+      their own pace — not gated on any further code or CI work.
 - [ ] `[post-v1]` Smithery listing — needs a hosted HTTPS URL or a `.mcpb` bundle; defer
       until it's a concrete priority (same call `unsplash-mcp-server` made).
 
