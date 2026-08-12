@@ -28,6 +28,7 @@ images and videos.
 - [Tools](#tools)
   - [Tool reference](#tool-reference)
   - [Output shape](#output-shape)
+  - [Resources & prompts](#resources--prompts)
 - [Example prompts](#example-prompts)
 - [License & compliance](#license--compliance)
 - [Rate limits & caching](#rate-limits--caching)
@@ -245,6 +246,19 @@ Tools return trimmed, token-efficient JSON rather than raw Pixabay responses:
   `height`).
 - Vanity metrics (`views`, `downloads`, `likes`, `comments`) are dropped from every result —
   they're rarely useful to a model and add tokens for no benefit.
+
+### Resources & prompts
+
+Beyond tools, the server also exposes:
+
+- **Resources** — a compact guide your client can pull in as context:
+  - `pixabay://guides/usage` — license/attribution guidance, the hotlinking-in-conversation
+    reasoning, content-safety notes, and the full-API-access-tier caveat.
+- **Prompts** — a ready-made task your client can surface directly:
+
+  | Prompt       | Arguments                                                                        | What it does                                                                   |
+  | ------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+  | `find_media` | `subject` (required), `media_type?` (`images`\|`videos`\|`both`, default `both`) | Search for a subject and present the best match(es) with courtesy attribution. |
 
 ## Example prompts
 

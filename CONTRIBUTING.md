@@ -40,9 +40,11 @@ PIXABAY_API_KEY=your-key npx @modelcontextprotocol/inspector node dist/index.js
 
 Connect, open the **Tools** tab, and run any of the 4 tools (`pixabay_search_images`,
 `pixabay_get_image`, `pixabay_search_videos`, `pixabay_get_video`) directly, inspect their
-input schemas, and see raw tool results (including `isError` cases). Server logs (stderr)
-appear in the terminal where you launched the Inspector. Rebuild (`npm run build`) after any
-source change and restart Inspector to pick it up.
+input schemas, and see raw tool results (including `isError` cases). Open the **Resources**
+tab to read `pixabay://guides/usage`, or the **Prompts** tab to run `find_media` with sample
+arguments and check the generated message text. Server logs (stderr) appear in the terminal
+where you launched the Inspector. Rebuild (`npm run build`) after any source change and
+restart Inspector to pick it up.
 
 ## Project structure & conventions
 
