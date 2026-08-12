@@ -1,5 +1,6 @@
 import { buildCacheKey, type Cache, type CacheKeyParams } from '../lib/cache.js'
 import type { Logger } from '../lib/logger.js'
+import type { Redactor } from '../lib/redact.js'
 import { imageSearchResponseSchema, type ImageSearchResponse } from '../schemas/image.js'
 import { videoSearchResponseSchema, type VideoSearchResponse } from '../schemas/video.js'
 import { PixabayApiError } from './errors.js'
@@ -18,6 +19,7 @@ export interface PixabayClientConfig {
   apiKey: string
   cache: Cache
   logger: Logger
+  redactor: Redactor
 }
 
 const IMAGES_ENDPOINT = 'https://pixabay.com/api/'
@@ -27,8 +29,10 @@ const VIDEOS_ENDPOINT = 'https://pixabay.com/api/videos/'
 // in case a future X-RateLimit-Reset value is unexpectedly large.
 const MAX_BACKOFF_SECONDS = 60
 
-// Single choke point for request-URL construction, per CLAUDE.md — this is where a
-// future redactor hooks in, since Pixabay only accepts the API key as a query param.
+// Single choke point for request-URL construction, per CLAUDE.md, since Pixabay only
+// accepts the API key as a query param. The URL built here is only ever handed to
+// fetch() — it must never be logged or included in an error message; see `attempt`
+// and the redactor it wraps errors with below.
 export function buildUrl(endpoint: string, apiKey: string, params: PixabayRequestParams): URL {
   const url = new URL(endpoint)
   url.searchParams.set('key', apiKey)
@@ -61,7 +65,18 @@ function parseRetryAfterSeconds(response: Response): number | undefined {
 export function createPixabayClient(config: PixabayClientConfig): PixabayClient {
   async function attempt(endpoint: string, params: PixabayRequestParams): Promise<Response> {
     const url = buildUrl(endpoint, config.apiKey, params)
-    return fetch(url)
+    try {
+      return await fetch(url)
+    } catch (error) {
+      // fetch() itself can throw with the request URL embedded in its message (e.g.
+      // on a DNS/connection failure) — the URL carries the `key` query param, so
+      // redact before this can ever reach a log line or an isError tool result.
+      // Deliberately not attaching `cause: error` — that would smuggle the raw,
+      // unredacted message right back in for anything that inspects it.
+      const message = error instanceof Error ? error.message : String(error)
+      // eslint-disable-next-line preserve-caught-error
+      throw new Error(config.redactor.redact(message))
+    }
   }
 
   // Every outbound GET routes through the cache (Pixabay's terms require 24h
@@ -92,9 +107,13 @@ export function createPixabayClient(config: PixabayClientConfig): PixabayClient 
     }
 
     if (!response.ok) {
-      // Never include `url` here — it carries the `key` query param.
+      // Never include `url` here — it carries the `key` query param. Redacted too,
+      // as defense-in-depth in case Pixabay's error body ever echoes back a param.
       const body = await response.text().catch(() => '')
-      throw new PixabayApiError(response.status, body || response.statusText)
+      throw new PixabayApiError(
+        response.status,
+        config.redactor.redact(body || response.statusText),
+      )
     }
 
     const json = await response.json()

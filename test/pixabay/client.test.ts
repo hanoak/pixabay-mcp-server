@@ -1,11 +1,28 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildUrl, createPixabayClient } from '../../src/pixabay/client.js'
+import {
+  buildUrl,
+  createPixabayClient,
+  type PixabayClientConfig,
+} from '../../src/pixabay/client.js'
 import { PixabayApiError } from '../../src/pixabay/errors.js'
 import { createCache } from '../../src/lib/cache.js'
+import { createRedactor } from '../../src/lib/redact.js'
 import type { Logger } from '../../src/lib/logger.js'
 
 function fakeLogger(): Logger {
   return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+}
+
+function makeClient(overrides: Partial<PixabayClientConfig> = {}) {
+  const apiKey = overrides.apiKey ?? 'secret-key'
+  const logger = overrides.logger ?? fakeLogger()
+  const config: PixabayClientConfig = {
+    apiKey,
+    cache: overrides.cache ?? createCache(),
+    logger,
+    redactor: overrides.redactor ?? createRedactor(apiKey),
+  }
+  return { client: createPixabayClient(config), logger, config }
 }
 
 describe('buildUrl', () => {
@@ -43,11 +60,7 @@ describe('createPixabayClient', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({
-      apiKey: 'secret-key',
-      cache: createCache(),
-      logger: fakeLogger(),
-    })
+    const { client } = makeClient()
     const result = await client.searchImages({ q: 'cats' })
 
     expect(result.hits).toEqual([{ id: 1 }])
@@ -63,11 +76,7 @@ describe('createPixabayClient', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({
-      apiKey: 'secret-key',
-      cache: createCache(),
-      logger: fakeLogger(),
-    })
+    const { client } = makeClient()
     const result = await client.searchVideos({ q: 'ocean' })
 
     expect(result.hits).toEqual([{ id: 2 }])
@@ -86,11 +95,7 @@ describe('createPixabayClient', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({
-      apiKey: 'super-secret-key',
-      cache: createCache(),
-      logger: fakeLogger(),
-    })
+    const { client } = makeClient({ apiKey: 'super-secret-key' })
 
     await expect(client.searchImages({})).rejects.toMatchObject({
       status: 400,
@@ -109,9 +114,8 @@ describe('createPixabayClient', () => {
       }),
     )
     vi.stubGlobal('fetch', fetchMock)
-    const logger = fakeLogger()
 
-    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger })
+    const { client, logger } = makeClient()
     await client.searchImages({ q: 'cats' })
     const result = await client.searchImages({ q: 'cats' })
 
@@ -128,7 +132,7 @@ describe('createPixabayClient', () => {
       )
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger: fakeLogger() })
+    const { client } = makeClient()
     await expect(client.searchImages({ q: 'cats' })).rejects.toBeInstanceOf(PixabayApiError)
     await expect(client.searchImages({ q: 'cats' })).rejects.toBeInstanceOf(PixabayApiError)
 
@@ -143,9 +147,8 @@ describe('createPixabayClient', () => {
       }),
     )
     vi.stubGlobal('fetch', fetchMock)
-    const logger = fakeLogger()
 
-    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger })
+    const { client, logger } = makeClient()
     await client.searchImages({ q: 'cats' })
 
     expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('42'))
@@ -166,9 +169,8 @@ describe('createPixabayClient', () => {
         }),
       )
     vi.stubGlobal('fetch', fetchMock)
-    const logger = fakeLogger()
 
-    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger })
+    const { client, logger } = makeClient()
     const result = await client.searchImages({ q: 'cats' })
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
@@ -182,7 +184,7 @@ describe('createPixabayClient', () => {
       .mockResolvedValue(new Response('API rate limit exceeded', { status: 429 }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger: fakeLogger() })
+    const { client } = makeClient()
 
     await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({ status: 429 })
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -197,9 +199,29 @@ describe('createPixabayClient', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const client = createPixabayClient({ apiKey: 'k', cache: createCache(), logger: fakeLogger() })
+    const { client } = makeClient()
 
     await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({ status: 429 })
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('redacts the key from a raw network error thrown by fetch() itself', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => {
+      // Simulates undici embedding the full request URL (key included) in a
+      // connection-failure message, as it sometimes does.
+      throw new Error(
+        'fetch failed: connect ECONNREFUSED https://pixabay.com/api/?key=super-secret-key&q=cats',
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { client } = makeClient({ apiKey: 'super-secret-key' })
+
+    await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({
+      message: expect.not.stringContaining('super-secret-key'),
+    })
+    await expect(client.searchImages({ q: 'cats' })).rejects.toMatchObject({
+      message: expect.stringContaining('[REDACTED]'),
+    })
   })
 })
