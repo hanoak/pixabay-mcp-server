@@ -384,8 +384,13 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 
 ## 13. Discovery & ecosystem
 
-- [ ] `[v1]` List on the official MCP registry (`server.json` manifest) + community
-      catalogs (Glama, awesome-mcp-servers, mcp.so, PulseMCP).
+- [~] `[v1]` List on the official MCP registry (`server.json` manifest) + community
+  catalogs (Glama, awesome-mcp-servers, mcp.so, PulseMCP). `server.json` is written
+  and schema-validated, and `package.json`'s `mcpName` matches it for npm ownership
+  verification. **The actual registry submission (`mcp-publisher publish`) and
+  community catalog listings still need the npm package to exist first** — same
+  bootstrap order as §2's OIDC trusted publishing. Do this after the first real
+  `npm publish`.
 - [ ] `[post-v1]` Smithery listing — needs a hosted HTTPS URL or a `.mcpb` bundle; defer
       until it's a concrete priority (same call `unsplash-mcp-server` made).
 
