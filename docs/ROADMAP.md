@@ -6,15 +6,18 @@ first release.
 
 ## Roadmap
 
-### 🚧 v1 — in progress
+### 🟡 v1 — feature-complete, pending publish
 
 The public, read-only surface: search + lookup tools for Pixabay **images** and **videos**;
 a mandatory 24-hour response cache (Pixabay's terms require it); default `safesearch=true`;
 courtesy attribution (optional, never gated); a resilient HTTP client (retry/backoff on
-429/5xx, rate-limit-header awareness); and the same CI quality gates
+429/5xx, rate-limit-header awareness); MCP resources/prompts; and the same CI quality gates
 (`unsplash-mcp-server` uses: coverage floor, dependency-license check, package validation,
 cross-platform test matrix, secret scanning). No OAuth, no write endpoints — Pixabay's
-public API doesn't have any. Full detail in the checklist below.
+public API doesn't have any. Every `[v1]` checklist item is done except two that need the
+project owner's own action: npm account 2FA/token (§2) and the actual registry/catalog
+submission, which needs the npm package published first (§13). Full detail in the checklist
+below.
 
 ### 🔲 v2 — not planned yet
 
