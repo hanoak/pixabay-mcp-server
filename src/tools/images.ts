@@ -1,13 +1,8 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { PixabayClient } from '../pixabay/client.js'
 import { formatImageDetail, formatImageSummary } from './format.js'
 import { toErrorResult, toSuccessResult, type ToolResult } from './result.js'
-import { CATEGORY_VALUES, ORDER_VALUES } from './shared.js'
-
-export interface ToolContext {
-  client: PixabayClient
-}
+import { CATEGORY_VALUES, ORDER_VALUES, type ToolContext } from './shared.js'
 
 const IMAGE_TYPE_VALUES = ['all', 'photo', 'illustration', 'vector'] as const
 const ORIENTATION_VALUES = ['all', 'horizontal', 'vertical'] as const

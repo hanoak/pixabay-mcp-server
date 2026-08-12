@@ -1,5 +1,11 @@
+import type { PixabayClient } from '../pixabay/client.js'
+
 // Shared between images.ts and videos.ts — both search endpoints accept the same
 // category and order values (verified against pixabay.com/api/docs/).
+
+export interface ToolContext {
+  client: PixabayClient
+}
 
 export const CATEGORY_VALUES = [
   'backgrounds',
