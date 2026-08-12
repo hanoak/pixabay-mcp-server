@@ -337,36 +337,50 @@ dependabot.yml` watches npm + github-actions weekly; only 2 runtime deps
 
 ## 10. Docs & maintenance
 
-- [ ] `[v1]` CHANGELOG (Changesets-managed) — **no hand-written intro paragraph** (see
-      CLAUDE.md's Release process section for why).
-- [ ] `[v1]` Compatibility matrix (MCP SDK / Node versions supported).
-- [ ] `[v1]` Deprecation policy for future breaking changes.
+- [x] `[v1]` CHANGELOG (Changesets-managed) — **no hand-written intro paragraph** (see
+      CLAUDE.md's Release process section for why). ✅ Created in §5's Changesets pass —
+      missed checking this off at the time; `CHANGELOG.md` has contained exactly
+      `# Changelog` since then.
+- [x] `[v1]` Compatibility matrix (MCP SDK / Node versions supported). ✅ README's
+      "Compatibility" section (added in §6, also missed at the time).
+- [x] `[v1]` Deprecation policy for future breaking changes. ✅ CONTRIBUTING.md's
+      "Versioning & deprecation policy" section (added in §6, also missed at the time).
 
 ## 11. MCP protocol correctness
 
-- [ ] `[v1]` Return recoverable failures as `isError: true` tool results, never JSON-RPC
-      protocol errors.
+- [x] `[v1]` Return recoverable failures as `isError: true` tool results, never JSON-RPC
+      protocol errors. ✅ Done since §7 (`tools/result.ts`'s `toErrorResult`, empty-search
+      handling); confirmed again here since this section wasn't formally reached until now.
 - [x] `[v1]` Graceful shutdown + crash safety (stdin EOF / SIGINT / SIGTERM,
-      `uncaughtException`/`unhandledRejection`). ✅ Completed early, in the §5
-      pass, as part of the same `index.ts`/`server.ts` port that added
-      `--version`/`--help`. The rest of this section (tool annotations, the
-      `instructions` field, MCP cancellation, resources/prompts) is still open.
-- [ ] `[v1]` Declare tool annotations (`readOnlyHint: true`, `openWorldHint: true`, `title`).
-- [ ] `[v1]` Namespace tool names (`pixabay_search_images`, not `search_images`).
-- [ ] `[v1]` Populate the server `instructions` field (default safesearch, courtesy
-      attribution, untrusted-text-fields warning).
-- [ ] `[v1]` Keep tool `inputSchema`s flat and JSON-Schema-safe.
-- [ ] `[v1]` Honor MCP request cancellation (`notifications/cancelled` →
-      `AbortController`).
-- [ ] `[v1]` Optional MCP Resources / Prompts (e.g. a licensing/attribution guide resource,
-      a "find media for X" prompt covering both images and videos).
+      `uncaughtException`/`unhandledRejection`). ✅ Completed early, in the §5 pass, as
+      part of the same `index.ts`/`server.ts` port that added `--version`/`--help`.
+- [x] `[v1]` Declare tool annotations (`readOnlyHint: true`, `openWorldHint: true`, `title`).
+      ✅ `title` since §7; `readOnlyHint`/`openWorldHint` added to all 4 tools in this pass
+      — accurate for every tool here (Pixabay's API is entirely read-only and external).
+- [x] `[v1]` Namespace tool names (`pixabay_search_images`, not `search_images`). ✅ Done
+      since §7.
+- [x] `[v1]` Populate the server `instructions` field (default safesearch, courtesy
+      attribution, untrusted-text-fields warning). ✅ `SERVER_INSTRUCTIONS` in
+      `server.ts`, covering all three; verified delivered over the real transport via
+      `client.getInstructions()`.
+- [x] `[v1]` Keep tool `inputSchema`s flat and JSON-Schema-safe. ✅ Done since §7.
+- [x] `[v1]` Honor MCP request cancellation (`notifications/cancelled` →
+      `AbortController`). ✅ Tool handlers now thread the MCP SDK's `extra.signal`
+      through to `PixabayClient.searchImages`/`searchVideos`, which combines it with the
+      request timeout via `AbortSignal.any` (built ready for this in §3).
+- [x] `[v1]` Optional MCP Resources / Prompts (e.g. a licensing/attribution guide resource,
+      a "find media for X" prompt covering both images and videos). ✅
+      `pixabay://guides/usage` resource + `find_media` prompt (covering both images and
+      videos via a `media_type` argument), matching this bullet's own suggestion.
 
 ## 12. Content safety & responsible use
 
-- [ ] `[v1]` Default `safesearch=true` on search/lookup (overridable).
-- [ ] `[v1]` Treat Pixabay text fields (tags, contributor names) as untrusted data /
+- [x] `[v1]` Default `safesearch=true` on search/lookup (overridable). ✅ Done since §7.
+- [x] `[v1]` Treat Pixabay text fields (tags, contributor names) as untrusted data /
       indirect prompt-injection surface — label clearly as data; never interpolate into
-      privileged/system prompts.
+      privileged/system prompts. ✅ True in code by construction since §7 (nothing ever
+      elevates `tags`/`user` into a prompt); now also communicated to the model itself via
+      §11's `SERVER_INSTRUCTIONS`, not just to human README readers.
 
 ## 13. Discovery & ecosystem
 
