@@ -64,6 +64,7 @@
     "pretest": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pretest:coverage": "npm run build",
     "test:coverage": "vitest run --coverage",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
     "check:package": "npm run build && publint && attw --pack . --profile esm-only",
