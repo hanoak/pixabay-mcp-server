@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { searchResponseEnvelopeSchema } from './envelope.js'
 
 const videoVariantSchema = z.object({
   url: z.string().nullish(),
@@ -32,9 +33,7 @@ export const videoSchema = z.object({
 
 export type Video = z.infer<typeof videoSchema>
 
-export const videoSearchResponseSchema = z.object({
-  total: z.number().nullish(),
-  totalHits: z.number().nullish(),
+export const videoSearchResponseSchema = searchResponseEnvelopeSchema.extend({
   hits: z.array(videoSchema).optional().default([]),
 })
 

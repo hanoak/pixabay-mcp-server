@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { searchResponseEnvelopeSchema } from './envelope.js'
 
 // Lenient by design: only `id` is required. Every other field is optional/nullable so
 // an upstream field add/rename/reorder degrades gracefully instead of breaking a tool.
@@ -22,9 +23,7 @@ export const imageSchema = z.object({
 
 export type Image = z.infer<typeof imageSchema>
 
-export const imageSearchResponseSchema = z.object({
-  total: z.number().nullish(),
-  totalHits: z.number().nullish(),
+export const imageSearchResponseSchema = searchResponseEnvelopeSchema.extend({
   hits: z.array(imageSchema).optional().default([]),
 })
 
