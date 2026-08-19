@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@hanoak/pixabay-mcp-server.svg)](https://www.npmjs.com/package/@hanoak/pixabay-mcp-server)
 [![npm downloads](https://img.shields.io/npm/dm/@hanoak/pixabay-mcp-server.svg)](https://www.npmjs.com/package/@hanoak/pixabay-mcp-server)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-6f42c1.svg)](https://registry.modelcontextprotocol.io)
 [![CI](https://github.com/hanoak/pixabay-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/hanoak/pixabay-mcp-server/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![node: >=20](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](#requirements)
