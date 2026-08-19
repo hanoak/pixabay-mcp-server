@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+### Patch Changes
+
+- 73990f7: Add an MCP Registry badge to the README, linking to the server's live listing on the official registry.
+
 ## 1.0.0
 
 ### Major Changes
