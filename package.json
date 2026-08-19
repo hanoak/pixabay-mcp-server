@@ -1,6 +1,6 @@
 {
   "name": "@hanoak/pixabay-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "mcpName": "io.github.hanoak/pixabay-mcp-server",
   "description": "Unofficial Model Context Protocol (MCP) server for the Pixabay API — search and fetch royalty-free images and videos. Not affiliated with or endorsed by Pixabay.",
   "keywords": [
